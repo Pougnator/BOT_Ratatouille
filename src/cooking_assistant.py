@@ -32,6 +32,23 @@ class CookingAssistant:
         state_name = self.state_machine.current_state.value.replace('_', ' ').title()
         self.console.print(f"\n[bold cyan]Current State:[/bold cyan] {state_name}\n")
         
+    def collect_servings(self):
+        self.console.print("[bold yellow]How many people are you cooking for?[/bold yellow]")
+        
+        while True:
+            servings_input = Prompt.ask("Number of servings", default="2")
+            
+            try:
+                servings = int(servings_input)
+                if servings > 0:
+                    self.state_machine.set_servings(servings)
+                    self.console.print(f"\n[green]✓ Cooking for {servings} people[/green]")
+                    return True
+                else:
+                    self.console.print("[red]Please enter a positive number.[/red]")
+            except ValueError:
+                self.console.print("[red]Please enter a valid number.[/red]")
+        
     def collect_ingredients(self):
         self.console.print("[bold yellow]What ingredients do you have?[/bold yellow]")
         self.console.print("Enter ingredients separated by commas (e.g., chicken, rice, tomatoes)")
@@ -50,7 +67,10 @@ class CookingAssistant:
     def propose_recipes(self):
         self.console.print("\n[bold cyan]Analyzing your ingredients and finding recipes...[/bold cyan]\n")
         
-        recipes_response = self.llm_agent.propose_recipes(self.state_machine.ingredients)
+        recipes_response = self.llm_agent.propose_recipes(
+            self.state_machine.ingredients,
+            self.state_machine.servings
+        )
         
         self.console.print(Panel(recipes_response, title="📖 Recipe Suggestions", border_style="blue"))
         
@@ -67,7 +87,11 @@ class CookingAssistant:
         if recipe_name:
             self.console.print(f"\n[green]✓ Selected recipe: {recipe_name}[/green]")
             
-            steps = self.llm_agent.get_recipe_steps(recipe_name, self.state_machine.ingredients)
+            steps = self.llm_agent.get_recipe_steps(
+                recipe_name,
+                self.state_machine.ingredients,
+                self.state_machine.servings
+            )
             self.state_machine.set_recipe_steps(steps)
             self.state_machine.selected_recipe = recipe_name
             
@@ -119,7 +143,7 @@ class CookingAssistant:
                 duration_str = user_input[6:].strip()
                 duration_seconds = self.timer.parse_duration(duration_str)
                 if duration_seconds:
-                    timer_id = asyncio.run(self.timer.start_timer(duration_seconds, f"Step {step_num}"))
+                    timer_id = self.timer.start_timer(duration_seconds, f"Step {step_num}")
                     self.console.print(f"[green]✓ Timer set for {self.timer.format_time(duration_seconds)}[/green]")
                 else:
                     self.console.print("[red]Invalid duration. Try '10 min', '30 sec', etc.[/red]")
@@ -134,6 +158,9 @@ class CookingAssistant:
                 
     async def run(self):
         self.display_welcome()
+        
+        self.collect_servings()
+        
         self.state_machine.transition_to(CookingState.INGREDIENT_COLLECTION)
         
         while True:

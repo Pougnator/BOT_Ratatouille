@@ -50,7 +50,7 @@ class LLMAgent:
         except Exception as e:
             return f"Error communicating with LLM: {str(e)}"
             
-    def propose_recipes(self, ingredients: list) -> str:
+    def propose_recipes(self, ingredients: list, servings: int = 2) -> str:
         ingredients_str = ", ".join(ingredients)
         system_prompt = """You are a helpful cooking assistant. Based on the ingredients provided, 
         suggest 3 different recipes. For each recipe, provide:
@@ -59,17 +59,18 @@ class LLMAgent:
         3. Difficulty level (Easy/Medium/Hard)
         Format your response as a numbered list."""
         
-        user_prompt = f"I have these ingredients: {ingredients_str}. What recipes can I make?"
+        user_prompt = f"I have these ingredients: {ingredients_str}. I'm cooking for {servings} people. What recipes can I make?"
         
         return self.get_response(user_prompt, system_prompt)
         
-    def get_recipe_steps(self, recipe_name: str, ingredients: list) -> list:
+    def get_recipe_steps(self, recipe_name: str, ingredients: list, servings: int = 2) -> list:
         ingredients_str = ", ".join(ingredients)
         system_prompt = """You are a helpful cooking assistant. Provide clear, step-by-step cooking 
         instructions for the requested recipe. Each step should be concise and actionable. 
-        Include timing information where relevant. Format as a numbered list with one step per line."""
+        Include timing information where relevant. Specify exact ingredient quantities adjusted for the number 
+        of servings. Format as a numbered list with one step per line."""
         
-        user_prompt = f"Give me detailed cooking steps for {recipe_name} using these ingredients: {ingredients_str}"
+        user_prompt = f"Give me detailed cooking steps for {recipe_name} for {servings} people using these ingredients: {ingredients_str}. Include specific quantities for each ingredient."
         
         response = self.get_response(user_prompt, system_prompt)
         

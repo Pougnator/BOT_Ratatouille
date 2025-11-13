@@ -15,6 +15,7 @@ class CookingState(Enum):
 class StateMachine:
     def __init__(self):
         self.current_state = CookingState.STARTING
+        self.servings = 2
         self.ingredients = []
         self.proposed_recipes = []
         self.selected_recipe = None
@@ -23,6 +24,9 @@ class StateMachine:
         
     def transition_to(self, new_state: CookingState):
         self.current_state = new_state
+        
+    def set_servings(self, servings: int):
+        self.servings = servings
         
     def add_ingredients(self, ingredients: list):
         self.ingredients.extend(ingredients)

@@ -28,7 +28,7 @@ class CookingTimer:
         except ValueError:
             return None
             
-    async def start_timer(self, duration_seconds: int, name: Optional[str] = None) -> int:
+    def start_timer(self, duration_seconds: int, name: Optional[str] = None) -> int:
         self.timer_count += 1
         timer_id = self.timer_count
         
