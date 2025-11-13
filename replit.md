@@ -7,15 +7,17 @@ An intelligent cooking assistant built with Python and LLM agents. The assistant
 - **November 13, 2025**: Initial project setup
   - Created state machine for managing cooking workflow states
   - Integrated OpenAI LLM for natural language understanding
-  - Implemented timer functionality for cooking steps
+  - Implemented timer functionality for cooking steps (timestamp-based polling)
   - Built interactive CLI with Rich library
+  - Added servings tracking - assistant asks number of people at start and adjusts all quantities
 
 ## Features
+- **Servings-aware cooking**: Asks for number of people at the start and adjusts all ingredient quantities
 - **Ingredient-based recipe suggestions**: Provide your ingredients, get recipe recommendations
 - **State-based workflow**: Natural progression through cooking stages
-- **Step-by-step guidance**: LLM-powered assistance for each cooking step
-- **Timer management**: Track cooking times for various steps
-- **Interactive CLI**: Clean, colorful terminal interface
+- **Step-by-step guidance**: LLM-powered assistance for each cooking step with specific quantities
+- **Timer management**: Track cooking times for various steps with countdown display
+- **Interactive CLI**: Clean, colorful terminal interface with retry logic for inputs
 
 ## Project Architecture
 
