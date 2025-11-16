@@ -87,13 +87,43 @@ class CookingAssistant:
         if recipe_name:
             self.console.print(f"\n[green]✓ Selected recipe: {recipe_name}[/green]")
             
-            steps = self.llm_agent.get_recipe_steps(
+            recipe_data = self.llm_agent.get_recipe_steps(
                 recipe_name,
                 self.state_machine.ingredients,
                 self.state_machine.servings
             )
+
+            # Explain the ingredients needed in natural language
+         
+            ingredients_natural_list = self.llm_agent.explain_ingredients_naturally(
+                self.state_machine.ingredients,
+                recipe_name,
+                recipe_data.get("steps", [])
+            )
+            self.console.print(Panel(ingredients_natural_list, title="🧾 Ingredients", border_style="blue"))
+            
+            # Display ingredients in a formatted way
+            ingredients_list = recipe_data.get("ingredients", [])
+            if ingredients_list:
+                table = Table(title="🧾 Ingredients")
+                table.add_column("Quantity", style="cyan")
+                table.add_column("Unit", style="green")
+                table.add_column("Ingredient", style="yellow")
+                table.add_column("Preparation", style="magenta")
+                
+                for ingredient in ingredients_list:
+                    quantity = ingredient.get("quantity", "")
+                    unit = ingredient.get("unit", "")
+                    name = ingredient.get("name", "")
+                    prep = ingredient.get("preparation", "")
+                    table.add_row(quantity, unit, name, prep)
+                
+                self.console.print(table)
+            
+            # Set recipe steps and name
+            steps = recipe_data.get("steps", [])
             self.state_machine.set_recipe_steps(steps)
-            self.state_machine.selected_recipe = recipe_name
+            self.state_machine.selected_recipe = recipe_data.get("title", recipe_name)
             
             return True
         return False

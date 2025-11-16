@@ -23,30 +23,58 @@ class LLMAgent:
             "content": content
         })
         
-    def get_response(self, user_input: Optional[str] = None, system_prompt: Optional[str] = None) -> str:
+    def get_response(self, user_input: Optional[str] = None, system_prompt: Optional[str] = None, functions=None) -> str:
         if system_prompt:
+            system_prompt += "\n\nRéponds toujours en français, quelle que soit la langue de la question."
             self.add_system_message(system_prompt)
+        else:
+            # If no system prompt was provided, add a default French instruction
+            self.add_system_message("Réponds toujours en français, quelle que soit la langue de la question.")
             
         if user_input:
             self.add_user_message(user_input)
             
         try:
-            response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=self.conversation_history,
-                temperature=0.7,
-                max_tokens=1000
-            )
+            # Build request parameters
+            params = {
+                "model": "gpt-4o-mini",
+                "messages": self.conversation_history,
+                "temperature": 0.7,
+                "max_tokens": 1000
+            }
             
-            assistant_message = response.choices[0].message.content
-            if assistant_message is None:
-                assistant_message = "No response from LLM"
-            self.conversation_history.append({
-                "role": "assistant",
-                "content": assistant_message
-            })
+            # Add functions if provided
+            if functions:
+                params["functions"] = functions
+                params["function_call"] = {"name": functions[0]["name"]}
             
-            return assistant_message
+            response = self.client.chat.completions.create(**params)
+            
+            # Check if response is a function call
+            message = response.choices[0].message
+            
+            if hasattr(message, "function_call") and message.function_call:
+                # Extract structured function response
+                assistant_message = message.function_call.arguments
+                self.conversation_history.append({
+                    "role": "assistant",
+                    "content": str(assistant_message),
+                    "function_call": {
+                        "name": message.function_call.name,
+                        "arguments": message.function_call.arguments
+                    }
+                })
+                return assistant_message
+            else:
+                # Normal text response
+                assistant_message = message.content
+                if assistant_message is None:
+                    assistant_message = "No response from LLM"
+                self.conversation_history.append({
+                    "role": "assistant",
+                    "content": assistant_message
+                })
+                return assistant_message
         except Exception as e:
             return f"Error communicating with LLM: {str(e)}"
             
@@ -62,27 +90,93 @@ class LLMAgent:
         user_prompt = f"I have these ingredients: {ingredients_str}. I'm cooking for {servings} people. What recipes can I make?"
         
         return self.get_response(user_prompt, system_prompt)
+
+    def explain_ingredients_naturally(self, ingredients: list, recipe_name: str, recipe_steps: list) -> str:
+        system_prompt = "You are a helpful cooking assistant. Explain the ingredients I need for a recipe in a natural way that is easy to understand."
+        user_prompt = f"I have these ingredients: {ingredients}. I'm cooking the folowing recipe: :{recipe_name} and i am using the following steps: {recipe_steps}. Please use a concise and natural language to summarise the list of ingredients and the quantities i need"
+        return self.get_response(user_prompt, system_prompt)
         
-    def get_recipe_steps(self, recipe_name: str, ingredients: list, servings: int = 2) -> list:
+
+    def get_recipe_steps(self, recipe_name: str, ingredients: list, servings: int = 2) -> dict:
         ingredients_str = ", ".join(ingredients)
-        system_prompt = """You are a helpful cooking assistant. Provide clear, step-by-step cooking 
-        instructions for the requested recipe. Each step should be concise and actionable. 
-        Include timing information where relevant. Specify exact ingredient quantities adjusted for the number 
-        of servings. Format as a numbered list with one step per line."""
+        system_prompt = "You are a helpful cooking assistant. Provide a detailed recipe with ingredients and steps."
         
-        user_prompt = f"Give me detailed cooking steps for {recipe_name} for {servings} people using these ingredients: {ingredients_str}. Include specific quantities for each ingredient."
+        user_prompt = f"Give me a recipe for {recipe_name} for {servings} people using these ingredients: {ingredients_str}."
         
-        response = self.get_response(user_prompt, system_prompt)
+        recipe_function = [{
+            "name": "format_recipe",
+            "description": "Format a cooking recipe with ingredients and steps",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "description": "The title of the recipe"
+                    },
+                    "ingredients": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "quantity": {
+                                    "type": "string",
+                                    "description": "The quantity of the ingredient (e.g., '2', '1/4', '3-4')"
+                                },
+                                "unit": {
+                                    "type": "string",
+                                    "description": "The unit of measurement (e.g., 'cup', 'tablespoon', 'piece')"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "The name of the ingredient"
+                                },
+                                "preparation": {
+                                    "type": "string",
+                                    "description": "Optional preparation instruction (e.g., 'diced', 'minced')"
+                                }
+                            },
+                            "required": ["name"]
+                        },
+                        "description": "List of ingredients with quantities adjusted for the number of servings"
+                    },
+                    "steps": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Step-by-step cooking instructions, each step should be concise and actionable"
+                    },
+                    "prep_time_minutes": {
+                        "type": "integer",
+                        "description": "Estimated preparation time in minutes"
+                    },
+                    "cook_time_minutes": {
+                        "type": "integer",
+                        "description": "Estimated cooking time in minutes"
+                    }
+                },
+                "required": ["title", "ingredients", "steps"]
+            }
+        }]
         
-        steps = []
-        for line in response.split('\n'):
-            line = line.strip()
-            if line and (line[0].isdigit() or line.startswith('-') or line.startswith('•')):
-                clean_step = line.lstrip('0123456789.-• ').strip()
-                if clean_step:
-                    steps.append(clean_step)
-                    
-        return steps if steps else [response]
+        response = self.get_response(user_prompt, system_prompt, functions=recipe_function)
+        
+        # Parse the JSON response
+        import json
+        try:
+            recipe_data = json.loads(response)
+            return recipe_data
+        except json.JSONDecodeError:
+            # Fallback to text parsing if JSON parsing fails
+            steps = []
+            for line in str(response).split('\n'):
+                line = line.strip()
+                if line and (line[0].isdigit() or line.startswith('-') or line.startswith('•')):
+                    clean_step = line.lstrip('0123456789.-• ').strip()
+                    if clean_step:
+                        steps.append(clean_step)
+            
+            return {"title": recipe_name, "ingredients": [], "steps": steps if steps else [str(response)]}
         
     def guide_step(self, step_description: str, user_question: Optional[str] = None) -> str:
         if user_question:
