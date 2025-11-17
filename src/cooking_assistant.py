@@ -19,73 +19,73 @@ class CookingAssistant:
         
     def display_welcome(self):
         welcome_text = """
-        Welcome to your AI Cooking Assistant! 👨‍🍳
+        Hello, je suis Robotatouille! 👨‍🍳
         
-        I'll help you discover delicious recipes based on your available ingredients
-        and guide you step-by-step through the cooking process.
+        Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédients disponibles
+        et vous guiderai étape par étape tout au long du processus de cuisine.
         
-        Let's get started!
+        Commençons!
         """
-        self.console.print(Panel(welcome_text, title="🍳 Cooking Assistant", border_style="green"))
+        self.console.print(Panel(welcome_text, title="🍳 Robotatouille", border_style="green"))
         
     def display_state(self):
         state_name = self.state_machine.current_state.value.replace('_', ' ').title()
         self.console.print(f"\n[bold cyan]Current State:[/bold cyan] {state_name}\n")
         
     def collect_servings(self):
-        self.console.print("[bold yellow]How many people are you cooking for?[/bold yellow]")
+        self.console.print("[bold yellow]Pour combien de personnes voulez-vous cuisiner?[/bold yellow]")
         
         while True:
-            servings_input = Prompt.ask("Number of servings", default="2")
+            servings_input = Prompt.ask("Nombre de personnes", default="2")
             
             try:
                 servings = int(servings_input)
                 if servings > 0:
                     self.state_machine.set_servings(servings)
-                    self.console.print(f"\n[green]✓ Cooking for {servings} people[/green]")
+                    self.console.print(f"\n[green]✓ On cuisine pour {servings} personnes[/green]")
                     return True
                 else:
-                    self.console.print("[red]Please enter a positive number.[/red]")
+                    self.console.print("[red]Veuillez entrer un nombre positif.[/red]")
             except ValueError:
-                self.console.print("[red]Please enter a valid number.[/red]")
+                self.console.print("[red]Veuillez entrer un nombre valide.[/red]")
         
     def collect_ingredients(self):
-        self.console.print("[bold yellow]What ingredients do you have?[/bold yellow]")
-        self.console.print("Enter ingredients separated by commas (e.g., chicken, rice, tomatoes)")
+        self.console.print("[bold yellow]Quels ingrédients avez-vous sous la main?[/bold yellow]")
+        self.console.print("Entrez les ingrédients séparés par des virgules (par exemple, poulet, riz, tomates)")
         
-        ingredients_input = Prompt.ask("Your ingredients")
+        ingredients_input = Prompt.ask("Vos ingrédients")
         ingredients = [ing.strip() for ing in ingredients_input.split(',') if ing.strip()]
         
         if ingredients:
             self.state_machine.add_ingredients(ingredients)
-            self.console.print(f"\n[green]✓ Added {len(ingredients)} ingredients[/green]")
+            self.console.print(f"\n[green]✓ J'ai ajouté {len(ingredients)} ingrédients[/green]")
             return True
         else:
-            self.console.print("[red]No ingredients provided. Please try again.[/red]")
+            self.console.print("[red]Aucun ingrédient fourni. Veuillez réessayer.[/red]")
             return False
             
     def propose_recipes(self):
-        self.console.print("\n[bold cyan]Analyzing your ingredients and finding recipes...[/bold cyan]\n")
+        self.console.print("\n[bold cyan]Analyse des ingrédients et recherche de recettes...[/bold cyan]\n")
         
         recipes_response = self.llm_agent.propose_recipes(
             self.state_machine.ingredients,
             self.state_machine.servings
         )
         
-        self.console.print(Panel(recipes_response, title="📖 Recipe Suggestions", border_style="blue"))
+        self.console.print(Panel(recipes_response, title="📖 Choix des recettes", border_style="blue"))
         
         self.state_machine.set_proposed_recipes(recipes_response.split('\n\n'))
         
     def confirm_recipe(self):
-        self.console.print("\n[bold yellow]Which recipe would you like to cook?[/bold yellow]")
-        self.console.print("Enter the recipe number (1-3) or type the recipe name:")
+        self.console.print("\n[bold yellow]Quel recette voulez-vous cuisiner?[/bold yellow]")
+        self.console.print("Entrez le numéro de la recette (1-3) ou le nom de la recette:")
         
-        choice = Prompt.ask("Your choice")
+        choice = Prompt.ask("Votre choix")
         
         recipe_name = choice.strip()
         
         if recipe_name:
-            self.console.print(f"\n[green]✓ Selected recipe: {recipe_name}[/green]")
+            self.console.print(f"\n[green]✓ Recette selectionnée: {recipe_name}[/green]")
             
             recipe_data = self.llm_agent.get_recipe_steps(
                 recipe_name,
@@ -100,7 +100,7 @@ class CookingAssistant:
                 recipe_name,
                 recipe_data.get("steps", [])
             )
-            self.console.print(Panel(ingredients_natural_list, title="🧾 Ingredients", border_style="blue"))
+            self.console.print(Panel(ingredients_natural_list, title="🧾 Ingrédients", border_style="blue"))
             
             # Display ingredients in a formatted way
             ingredients_list = recipe_data.get("ingredients", [])
@@ -130,11 +130,11 @@ class CookingAssistant:
         
     def display_cooking_steps(self):
         if not self.state_machine.recipe_steps:
-            self.console.print("[red]No recipe steps available.[/red]")
+            self.console.print("[red]Aucune étape de préparation disponible.[/red]")
             return
             
-        table = Table(title=f"📋 Cooking Steps for {self.state_machine.selected_recipe}")
-        table.add_column("Step", style="cyan", width=8)
+        table = Table(title=f"📋 Étapes de préparation pour {self.state_machine.selected_recipe}")
+        table.add_column("Étape", style="cyan", width=8)
         table.add_column("Instruction", style="white")
         
         for idx, step in enumerate(self.state_machine.recipe_steps, 1):
@@ -147,13 +147,13 @@ class CookingAssistant:
         current_step = self.state_machine.get_current_step()
         
         if not current_step:
-            self.console.print("[yellow]No more steps![/yellow]")
+            self.console.print("[yellow]C'est fini! Il ne reste plus d'étapes![/yellow]")
             return False
             
         step_num = self.state_machine.current_step + 1
         total_steps = len(self.state_machine.recipe_steps)
         
-        self.console.print(f"\n[bold green]Step {step_num}/{total_steps}:[/bold green]")
+        self.console.print(f"\n[bold green]Étape {step_num}/{total_steps}:[/bold green]")
         self.console.print(Panel(current_step, border_style="green"))
         
         while True:
@@ -164,7 +164,7 @@ class CookingAssistant:
                     time_str = self.timer.format_time(timer_info['remaining'])
                     self.console.print(f"  ⏱️  {timer_info['name']}: {time_str} remaining")
             
-            self.console.print("\n[dim]Commands: 'next' (continue), 'timer <duration>' (set timer), 'ask <question>' (ask for help), 'quit' (exit)[/dim]")
+            self.console.print("\n[dim]Commandes: 'next' (continue), 'timer <duration>' (set timer), 'ask <question>' (ask for help), 'quit' (exit)[/dim]")
             user_input = Prompt.ask("").strip().lower()
             
             if user_input == 'next':
@@ -176,15 +176,15 @@ class CookingAssistant:
                     timer_id = self.timer.start_timer(duration_seconds, f"Step {step_num}")
                     self.console.print(f"[green]✓ Timer set for {self.timer.format_time(duration_seconds)}[/green]")
                 else:
-                    self.console.print("[red]Invalid duration. Try '10 min', '30 sec', etc.[/red]")
+                    self.console.print("[red]Durée invalide. Essayez '10 min', '30 sec', etc.[/red]")
             elif user_input.startswith('ask '):
                 question = user_input[4:].strip()
                 response = self.llm_agent.guide_step(current_step, question)
-                self.console.print(Panel(response, title="💡 Cooking Tip", border_style="yellow"))
+                self.console.print(Panel(response, title="💡 Conseil de cuisine", border_style="yellow"))
             elif user_input == 'quit':
                 return False
             else:
-                self.console.print("[red]Unknown command. Try 'next', 'timer <duration>', or 'ask <question>'[/red]")
+                self.console.print("[red]Commande inconnue. Essayez 'next', 'timer <durée>', ou 'poser une <question>'[/red]")
                 
     async def run(self):
         self.display_welcome()
@@ -222,10 +222,10 @@ class CookingAssistant:
                     break
                     
             elif self.state_machine.current_state == CookingState.COMPLETED:
-                self.console.print("\n[bold green]🎉 Congratulations! You've completed the recipe![/bold green]")
-                self.console.print(Panel("Enjoy your delicious meal! 🍽️", border_style="green"))
+                self.console.print("\n[bold green]🎉 Félicitations! Vous avez terminé la recette![/bold green]")
+                self.console.print(Panel("Regalez-vous et ... bon appétit bien sûr! 🍽️", border_style="green"))
                 
-                again = Prompt.ask("\nWould you like to cook another recipe?", choices=["yes", "no"], default="no")
+                again = Prompt.ask("\nVoulez-vous cuisiner une autre chose?", choices=["yes", "no"], default="no")
                 if again == "yes":
                     self.state_machine.reset()
                     self.llm_agent.reset_conversation()
@@ -235,4 +235,4 @@ class CookingAssistant:
             else:
                 break
                 
-        self.console.print("\n[bold cyan]Thank you for using the Cooking Assistant! Happy cooking! 👋[/bold cyan]")
+        self.console.print("\n[bold cyan]Merci d'avoir fait confiance à Robotatouille! A la prochaine! 👋[/bold cyan]")
