@@ -195,8 +195,6 @@ class CookingAssistant:
             self.console.print("[dim]- Bouton sur GPIO 19: Help (obtenir de l'aide)[/dim]")
             self.console.print("[dim]- Bouton sur GPIO 0: Back/Cancel (annuler minuteur)[/dim]")
         
-        next_button_pressed = False
-        
         while True:
             # Check if the next button was pressed
             if hasattr(self, '_next_button_pressed') and self._next_button_pressed:
@@ -211,7 +209,37 @@ class CookingAssistant:
                     self.console.print(f"  ⏱️  {timer_info['name']}: {time_str} remaining")
             
             self.console.print("\n[dim]Commandes: 'next' (continue), 'timer <duration>' (set timer), 'ask <question>' (ask for help), 'quit' (exit)[/dim]")
-            user_input = Prompt.ask("").strip().lower()
+            
+            # Use a timeout for input to allow checking button presses
+            try:
+                import asyncio
+                from concurrent.futures import ThreadPoolExecutor
+                import sys
+                
+                # Create a future for input
+                with ThreadPoolExecutor(1) as executor:
+                    future = executor.submit(Prompt.ask, "", default="")
+                    
+                    # Check every 0.1 seconds for button press or input
+                    for _ in range(10):  # 1 second total timeout
+                        if future.done():
+                            user_input = future.result().strip().lower()
+                            break
+                        
+                        # Check if button was pressed
+                        if self._next_button_pressed:
+                            self._next_button_pressed = False
+                            return True
+                            
+                        asyncio.get_event_loop().run_until_complete(asyncio.sleep(0.1))
+                    else:
+                        # If we get here, continue the loop (no input received but no button press either)
+                        continue
+                        
+                    # Process the input normally
+            except Exception as e:
+                # Fall back to regular input if there's an issue
+                user_input = Prompt.ask("").strip().lower()
             
             if user_input == 'next':
                 return True
