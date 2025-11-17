@@ -67,10 +67,17 @@ class CookingAssistant:
     def propose_recipes(self):
         self.console.print("\n[bold cyan]Analyse des ingrédients et recherche de recettes...[/bold cyan]\n")
         
+        # Check if there's an additional recipe request
+        additional_request = self.state_machine.additional_recipe_request
+        
         recipes_response = self.llm_agent.propose_recipes(
             self.state_machine.ingredients,
-            self.state_machine.servings
+            self.state_machine.servings,
+            additional_request
         )
+        
+        # Clear the additional request after using it
+        self.state_machine.clear_additional_recipe_request()
         
         self.console.print(Panel(recipes_response, title="📖 Choix des recettes", border_style="blue"))
         
@@ -79,12 +86,27 @@ class CookingAssistant:
     def confirm_recipe(self):
         self.console.print("\n[bold yellow]Quel recette voulez-vous cuisiner?[/bold yellow]")
         self.console.print("Entrez le numéro de la recette (1-3) ou le nom de la recette:")
+        self.console.print("Entrez 0 + instructions additionnelles pour demander plus de recettes")
         
         choice = Prompt.ask("Votre choix")
         
         recipe_name = choice.strip()
         
-        if recipe_name:
+        # Check if user wants more recipes
+        if recipe_name.startswith('0'):
+            additional_prompt = recipe_name[1:].strip()
+            self.console.print("\n[cyan]Recherche de plus de recettes...[/cyan]")
+            
+            # Go back to the recipe proposal state
+            self.state_machine.transition_to(CookingState.RECIPE_PROPOSAL)
+            
+            # If there's an additional prompt, store it for the LLM to use
+            if additional_prompt:
+                self.state_machine.additional_recipe_request = additional_prompt
+                self.console.print(f"[italic]Avec précision: {additional_prompt}[/italic]")
+            
+            return False
+        elif recipe_name:
             self.console.print(f"\n[green]✓ Recette selectionnée: {recipe_name}[/green]")
             
             recipe_data = self.llm_agent.get_recipe_steps(

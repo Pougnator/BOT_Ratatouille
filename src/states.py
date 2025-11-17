@@ -21,6 +21,7 @@ class StateMachine:
         self.selected_recipe = None
         self.current_step = 0
         self.recipe_steps = []
+        self.additional_recipe_request = None
         
     def transition_to(self, new_state: CookingState):
         self.current_state = new_state
@@ -60,3 +61,6 @@ class StateMachine:
         
     def reset(self):
         self.__init__()
+        
+    def clear_additional_recipe_request(self):
+        self.additional_recipe_request = None

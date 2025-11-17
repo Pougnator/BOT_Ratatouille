@@ -78,16 +78,26 @@ class LLMAgent:
         except Exception as e:
             return f"Error communicating with LLM: {str(e)}"
             
-    def propose_recipes(self, ingredients: list, servings: int = 2) -> str:
+    def propose_recipes(self, ingredients: list, servings: int = 2, additional_request: str = None) -> str:
         ingredients_str = ", ".join(ingredients)
         system_prompt = """You are a helpful cooking assistant. Based on the ingredients provided, 
         suggest 3 different recipes. For each recipe, provide:
         1. Recipe name
         2. Brief description
         3. Difficulty level (Easy/Medium/Hard)
+        The first recipe should use all of the ingredients provided. 
+        The other recipes could be gradually more flexible, but must be delicious and use at least some of the ingredients provided. 
+        The third recipe could also incorporate some additional but very common ingredients.
+        The recipes should be in French.
         Format your response as a numbered list."""
         
-        user_prompt = f"I have these ingredients: {ingredients_str}. I'm cooking for {servings} people. What recipes can I make?"
+        user_prompt = f"I have these ingredients: {ingredients_str}. I'm cooking for {servings} people."
+        
+        # Add any additional recipe request criteria
+        if additional_request:
+            user_prompt += f" {additional_request}"
+        else:
+            user_prompt += " What recipes can I make?"
         
         return self.get_response(user_prompt, system_prompt)
 
