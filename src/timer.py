@@ -1,11 +1,21 @@
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Dict, Callable
+import threading
+import time
+from rich.console import Console
 
 
 class CookingTimer:
     def __init__(self):
         self.active_timers = {}
         self.timer_count = 0
+        self.console = Console()
+        self.timer_thread = None
+        self.running = False
+        self.timer_expired_callbacks: Dict[int, Callable] = {}
+        
+        # Start the timer monitoring thread
+        self._start_timer_thread()
         
     def parse_duration(self, duration_str: str) -> Optional[int]:
         duration_str = duration_str.lower().strip()
@@ -85,3 +95,54 @@ class CookingTimer:
             return f"{minutes}m {secs}s"
         else:
             return f"{secs}s"
+            
+    def _start_timer_thread(self):
+        """Start the timer monitoring thread."""
+        self.running = True
+        self.timer_thread = threading.Thread(target=self._monitor_timers)
+        self.timer_thread.daemon = True
+        self.timer_thread.start()
+        
+    def _monitor_timers(self):
+        """Monitor active timers and trigger alerts when they expire."""
+        expired_timers = set()
+        
+        while self.running:
+            current_time = datetime.now()
+            
+            # Check for expired timers
+            for timer_id, timer in list(self.active_timers.items()):
+                if timer_id in expired_timers:
+                    continue  # Already processed this expired timer
+                    
+                if current_time >= timer['end_time']:
+                    # Timer expired!
+                    try:
+                        # Print the notification to the console
+                        self.console.print(f"\n[bold yellow]⏰ TIMER EXPIRED: {timer['name']} is done![/bold yellow]")
+                        
+                        # Call the callback if one is registered
+                        if timer_id in self.timer_expired_callbacks:
+                            self.timer_expired_callbacks[timer_id]()
+                            
+                        # Mark as expired so we don't notify again
+                        expired_timers.add(timer_id)
+                    except Exception as e:
+                        print(f"Error in timer callback: {e}")
+            
+            # Sleep for a short time to prevent high CPU usage
+            time.sleep(0.5)  # Check timers twice per second
+            
+    def register_expired_callback(self, timer_id: int, callback: Callable) -> bool:
+        """Register a callback function for a timer expiration."""
+        if timer_id not in self.active_timers:
+            return False
+            
+        self.timer_expired_callbacks[timer_id] = callback
+        return True
+        
+    def cleanup(self):
+        """Clean up timer resources."""
+        self.running = False
+        if self.timer_thread:
+            self.timer_thread.join(timeout=1.0)

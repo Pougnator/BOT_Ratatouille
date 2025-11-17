@@ -1,4 +1,6 @@
 import asyncio
+import threading
+import time
 from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Prompt
@@ -19,8 +21,8 @@ class CookingAssistant:
         self.timer = CookingTimer()
         self.hardware = HardwareHandler()
         
-        # Initialize button state flags
-        self._next_button_pressed = False
+        # Use threading Event objects for button communication
+        self._next_button_event = threading.Event()
         
         # If running on a Raspberry Pi, set up button callbacks
         if self.hardware.is_raspi:
@@ -195,51 +197,46 @@ class CookingAssistant:
             self.console.print("[dim]- Bouton sur GPIO 19: Help (obtenir de l'aide)[/dim]")
             self.console.print("[dim]- Bouton sur GPIO 0: Back/Cancel (annuler minuteur)[/dim]")
         
-        while True:
-            # Check if the next button was pressed
-            if hasattr(self, '_next_button_pressed') and self._next_button_pressed:
-                self._next_button_pressed = False
-                return True
+        # Clear any previous button events
+        self._next_button_event.clear()
+        
+        # Function to get console input without blocking button presses
+        def get_interruptible_input():
+            class InputResult:
+                value = None
                 
+            # Create a thread to get input
+            def input_thread_func():
+                InputResult.value = Prompt.ask("", console=self.console).strip().lower()
+                
+            # Display info and prompt
             active_timers = self.timer.get_active_timers()
             if active_timers:
                 self.console.print("\n[bold cyan]Active Timers:[/bold cyan]")
                 for timer_id, timer_info in active_timers.items():
                     time_str = self.timer.format_time(timer_info['remaining'])
                     self.console.print(f"  ⏱️  {timer_info['name']}: {time_str} remaining")
-            
+                    
             self.console.print("\n[dim]Commandes: 'next' (continue), 'timer <duration>' (set timer), 'ask <question>' (ask for help), 'quit' (exit)[/dim]")
             
-            # Use a timeout for input to allow checking button presses
-            try:
-                import asyncio
-                from concurrent.futures import ThreadPoolExecutor
-                import sys
-                
-                # Create a future for input
-                with ThreadPoolExecutor(1) as executor:
-                    future = executor.submit(Prompt.ask, "", default="")
-                    
-                    # Check every 0.1 seconds for button press or input
-                    for _ in range(10):  # 1 second total timeout
-                        if future.done():
-                            user_input = future.result().strip().lower()
-                            break
-                        
-                        # Check if button was pressed
-                        if self._next_button_pressed:
-                            self._next_button_pressed = False
-                            return True
-                            
-                        asyncio.get_event_loop().run_until_complete(asyncio.sleep(0.1))
-                    else:
-                        # If we get here, continue the loop (no input received but no button press either)
-                        continue
-                        
-                    # Process the input normally
-            except Exception as e:
-                # Fall back to regular input if there's an issue
-                user_input = Prompt.ask("").strip().lower()
+            # Start input thread
+            input_thread = threading.Thread(target=input_thread_func)
+            input_thread.daemon = True
+            input_thread.start()
+            
+            # Wait for either input completion or button press
+            while input_thread.is_alive():
+                if self._next_button_event.is_set():
+                    self._next_button_event.clear()
+                    return "next"  # Simulate 'next' command
+                time.sleep(0.1)  # Check 10 times per second
+            
+            # Input received
+            return InputResult.value
+            
+        while True:
+            # Get input (might be interrupted by button press)
+            user_input = get_interruptible_input()
             
             if user_input == 'next':
                 return True
@@ -281,7 +278,8 @@ class CookingAssistant:
         # Simulate 'next' command when in step execution
         if self.state_machine.current_state == CookingState.STEP_EXECUTION:
             self.console.print("[green]Moving to next step...[/green]")
-            self._next_button_pressed = True
+            # Signal the event to interrupt input
+            self._next_button_event.set()
     
     def _button_help(self):
         """Handler for the 'Help' button (GPIO 19)"""
