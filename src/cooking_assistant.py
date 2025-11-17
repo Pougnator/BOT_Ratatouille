@@ -8,6 +8,7 @@ from rich import print as rprint
 from .states import StateMachine, CookingState
 from .llm_agent import LLMAgent
 from .timer import CookingTimer
+from .hardware_handler import HardwareHandler
 
 
 class CookingAssistant:
@@ -16,6 +17,15 @@ class CookingAssistant:
         self.state_machine = StateMachine()
         self.llm_agent = LLMAgent()
         self.timer = CookingTimer()
+        self.hardware = HardwareHandler()
+        
+        # Initialize button state flags
+        self._next_button_pressed = False
+        
+        # If running on a Raspberry Pi, set up button callbacks
+        if self.hardware.is_raspi:
+            self.console.print("[bold green]✓ Raspberry Pi detected. Setting up GPIO buttons...[/bold green]")
+            self._setup_button_controls()
         
     def display_welcome(self):
         welcome_text = """
@@ -178,7 +188,21 @@ class CookingAssistant:
         self.console.print(f"\n[bold green]Étape {step_num}/{total_steps}:[/bold green]")
         self.console.print(Panel(current_step, border_style="green"))
         
+        # If on Raspberry Pi, display button controls guide
+        if self.hardware.is_raspi:
+            self.console.print("\n[dim]Contrôles physiques:[/dim]")
+            self.console.print("[dim]- Bouton sur GPIO 6: Next (passer à l'étape suivante)[/dim]")
+            self.console.print("[dim]- Bouton sur GPIO 19: Help (obtenir de l'aide)[/dim]")
+            self.console.print("[dim]- Bouton sur GPIO 0: Back/Cancel (annuler minuteur)[/dim]")
+        
+        next_button_pressed = False
+        
         while True:
+            # Check if the next button was pressed
+            if hasattr(self, '_next_button_pressed') and self._next_button_pressed:
+                self._next_button_pressed = False
+                return True
+                
             active_timers = self.timer.get_active_timers()
             if active_timers:
                 self.console.print("\n[bold cyan]Active Timers:[/bold cyan]")
@@ -208,53 +232,110 @@ class CookingAssistant:
             else:
                 self.console.print("[red]Commande inconnue. Essayez 'next', 'timer <durée>', ou 'poser une <question>'[/red]")
                 
+    def _setup_button_controls(self):
+        """Set up button controls for GPIO pins."""
+        # GPIO 6: Next button (move to next step)
+        self.hardware.register_button_callback(6, self._button_next)
+        
+        # GPIO 19: Ask for help button
+        self.hardware.register_button_callback(19, self._button_help)
+        
+        # GPIO 0: Back/Cancel button
+        self.hardware.register_button_callback(0, self._button_back)
+        
+        # Start polling the buttons
+        self.hardware.start_polling()
+        self.console.print("[green]✓ Button controls initialized[/green]")
+    
+    def _button_next(self):
+        """Handler for the 'Next' button (GPIO 6)"""
+        self.console.print("[bold blue]⏭️ Button pressed: Next[/bold blue]")
+        # Simulate 'next' command when in step execution
+        if self.state_machine.current_state == CookingState.STEP_EXECUTION:
+            self.console.print("[green]Moving to next step...[/green]")
+            self._next_button_pressed = True
+    
+    def _button_help(self):
+        """Handler for the 'Help' button (GPIO 19)"""
+        self.console.print("[bold yellow]❓ Button pressed: Help[/bold yellow]")
+        # Get current step if in execution mode
+        if self.state_machine.current_state == CookingState.STEP_EXECUTION:
+            current_step = self.state_machine.get_current_step()
+            if current_step:
+                response = self.llm_agent.guide_step(
+                    current_step, 
+                    "Explique cette étape de manière plus détaillée"
+                )
+                self.console.print(Panel(response, title="💡 Aide (via bouton)", border_style="yellow"))
+    
+    def _button_back(self):
+        """Handler for the 'Back/Cancel' button (GPIO 0)"""
+        self.console.print("[bold red]⏮️ Button pressed: Back/Cancel[/bold red]")
+        # Different behavior depending on state
+        if self.state_machine.current_state == CookingState.RECIPE_CONFIRMATION:
+            # Go back to recipe proposal
+            self.console.print("[yellow]Retour à la proposition de recettes...[/yellow]")
+            self.state_machine.transition_to(CookingState.RECIPE_PROPOSAL)
+        elif self.state_machine.current_state == CookingState.STEP_EXECUTION:
+            # Cancel current timer if any
+            active_timers = self.timer.get_active_timers()
+            if active_timers:
+                timer_id = list(active_timers.keys())[0]  # Cancel first timer
+                self.timer.stop_timer(timer_id)
+                self.console.print(f"[yellow]Timer '{active_timers[timer_id]['name']}' annulé[/yellow]")
+    
     async def run(self):
-        self.display_welcome()
-        
-        self.collect_servings()
-        
-        self.state_machine.transition_to(CookingState.INGREDIENT_COLLECTION)
-        
-        while True:
-            self.display_state()
+        try:
+            self.display_welcome()
             
-            if self.state_machine.current_state == CookingState.INGREDIENT_COLLECTION:
-                if self.collect_ingredients():
-                    self.state_machine.transition_to(CookingState.RECIPE_PROPOSAL)
-                    
-            elif self.state_machine.current_state == CookingState.RECIPE_PROPOSAL:
-                self.propose_recipes()
-                self.state_machine.transition_to(CookingState.RECIPE_CONFIRMATION)
+            self.collect_servings()
+            
+            self.state_machine.transition_to(CookingState.INGREDIENT_COLLECTION)
+            
+            while True:
+                self.display_state()
                 
-            elif self.state_machine.current_state == CookingState.RECIPE_CONFIRMATION:
-                if self.confirm_recipe():
-                    self.state_machine.transition_to(CookingState.COOKING_GUIDANCE)
+                if self.state_machine.current_state == CookingState.INGREDIENT_COLLECTION:
+                    if self.collect_ingredients():
+                        self.state_machine.transition_to(CookingState.RECIPE_PROPOSAL)
+                        
+                elif self.state_machine.current_state == CookingState.RECIPE_PROPOSAL:
+                    self.propose_recipes()
+                    self.state_machine.transition_to(CookingState.RECIPE_CONFIRMATION)
                     
-            elif self.state_machine.current_state == CookingState.COOKING_GUIDANCE:
-                self.display_cooking_steps()
-                self.state_machine.transition_to(CookingState.STEP_EXECUTION)
-                
-            elif self.state_machine.current_state == CookingState.STEP_EXECUTION:
-                if self.execute_current_step():
-                    if self.state_machine.is_cooking_complete():
-                        self.state_machine.transition_to(CookingState.COMPLETED)
+                elif self.state_machine.current_state == CookingState.RECIPE_CONFIRMATION:
+                    if self.confirm_recipe():
+                        self.state_machine.transition_to(CookingState.COOKING_GUIDANCE)
+                    
+                elif self.state_machine.current_state == CookingState.COOKING_GUIDANCE:
+                    self.display_cooking_steps()
+                    self.state_machine.transition_to(CookingState.STEP_EXECUTION)
+                    
+                elif self.state_machine.current_state == CookingState.STEP_EXECUTION:
+                    if self.execute_current_step():
+                        if self.state_machine.is_cooking_complete():
+                            self.state_machine.transition_to(CookingState.COMPLETED)
+                        else:
+                            self.state_machine.next_step()
                     else:
-                        self.state_machine.next_step()
-                else:
-                    break
+                        break
+                        
+                elif self.state_machine.current_state == CookingState.COMPLETED:
+                    self.console.print("\n[bold green]🎉 Félicitations! Vous avez terminé la recette![/bold green]")
+                    self.console.print(Panel("Regalez-vous et ... bon appétit bien sûr! 🍽️", border_style="green"))
                     
-            elif self.state_machine.current_state == CookingState.COMPLETED:
-                self.console.print("\n[bold green]🎉 Félicitations! Vous avez terminé la recette![/bold green]")
-                self.console.print(Panel("Regalez-vous et ... bon appétit bien sûr! 🍽️", border_style="green"))
-                
-                again = Prompt.ask("\nVoulez-vous cuisiner une autre chose?", choices=["yes", "no"], default="no")
-                if again == "yes":
-                    self.state_machine.reset()
-                    self.llm_agent.reset_conversation()
-                    self.state_machine.transition_to(CookingState.INGREDIENT_COLLECTION)
+                    again = Prompt.ask("\nVoulez-vous cuisiner une autre chose?", choices=["yes", "no"], default="no")
+                    if again == "yes":
+                        self.state_machine.reset()
+                        self.llm_agent.reset_conversation()
+                        self.state_machine.transition_to(CookingState.INGREDIENT_COLLECTION)
+                    else:
+                        break
                 else:
                     break
-            else:
-                break
+        finally:
+            # Clean up hardware resources
+            if self.hardware.is_raspi:
+                self.hardware.cleanup()
                 
-        self.console.print("\n[bold cyan]Merci d'avoir fait confiance à Robotatouille! A la prochaine! 👋[/bold cyan]")
+            self.console.print("\n[bold cyan]Merci d'avoir fait confiance à Robotatouille! A la prochaine! 👋[/bold cyan]")
