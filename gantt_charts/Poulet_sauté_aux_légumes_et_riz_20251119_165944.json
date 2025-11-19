@@ -1,0 +1,161 @@
+{
+  "tasks": [
+    {
+      "id": "1",
+      "name": "Laver les tomates sous l'eau froide.",
+      "start": "2025-11-19 16:59",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "2",
+      "name": "Couper les tomates en dés.",
+      "start": "2025-11-19 17:00",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "1"
+      ]
+    },
+    {
+      "id": "3",
+      "name": "Laver le poivron sous l'eau froide.",
+      "start": "2025-11-19 17:02",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "4",
+      "name": "Couper le poivron en lanières.",
+      "start": "2025-11-19 17:03",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "3"
+      ]
+    },
+    {
+      "id": "5",
+      "name": "Chauffer l'huile d'olive dans une grande poêle à feu moyen.",
+      "start": "2025-11-19 17:05",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "6",
+      "name": "Ajouter les dés de poulet dans la poêle.",
+      "start": "2025-11-19 17:07",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "5"
+      ]
+    },
+    {
+      "id": "7",
+      "name": "Saler et poivrer le poulet dans la poêle.",
+      "start": "2025-11-19 17:09",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": [
+        "6"
+      ]
+    },
+    {
+      "id": "8",
+      "name": "Faire cuire le poulet pendant 5 minutes, en remuant de temps en temps.",
+      "start": "2025-11-19 17:10",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "7"
+      ]
+    },
+    {
+      "id": "9",
+      "name": "Ajouter les tomates en dés et les lanières de poivron dans la poêle.",
+      "start": "2025-11-19 17:15",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "2",
+        "4",
+        "8"
+      ]
+    },
+    {
+      "id": "10",
+      "name": "Cuire le mélange à feu moyen pendant 10 minutes, en remuant régulièrement.",
+      "start": "2025-11-19 17:17",
+      "duration": 10,
+      "complete": 0,
+      "predecessors": [
+        "9"
+      ]
+    },
+    {
+      "id": "11",
+      "name": "Pendant ce temps, rincer le riz sous l'eau froide.",
+      "start": "2025-11-19 17:27",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "12",
+      "name": "Faire bouillir 300 ml d'eau dans une casserole.",
+      "start": "2025-11-19 17:28",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "11"
+      ]
+    },
+    {
+      "id": "13",
+      "name": "Ajouter le riz dans l'eau bouillante.",
+      "start": "2025-11-19 17:33",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": [
+        "12"
+      ]
+    },
+    {
+      "id": "14",
+      "name": "Cuire le riz pendant 10-12 minutes jusqu'à ce qu'il soit tendre.",
+      "start": "2025-11-19 17:34",
+      "duration": 12,
+      "complete": 0,
+      "predecessors": [
+        "13"
+      ]
+    },
+    {
+      "id": "15",
+      "name": "Égoutter le riz dans une passoire.",
+      "start": "2025-11-19 17:46",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "14"
+      ]
+    },
+    {
+      "id": "16",
+      "name": "Servir le poulet sauté sur un lit de riz.",
+      "start": "2025-11-19 17:48",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "10",
+        "15"
+      ]
+    }
+  ],
+  "resources": [],
+  "roles": []
+}

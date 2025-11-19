@@ -1,0 +1,158 @@
+{
+  "tasks": [
+    {
+      "id": "1",
+      "name": "Préchauffer le four à 180°C.",
+      "start": "2025-11-19 16:52",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "2",
+      "name": "Dans une casserole, faire bouillir de l'eau salée pour cuire les pâtes.",
+      "start": "2025-11-19 16:57",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "3",
+      "name": "Ajouter les pâtes à l'eau bouillante et cuire selon les instructions du paquet.",
+      "start": "2025-11-19 17:02",
+      "duration": 10,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "4",
+      "name": "Pendant ce temps, éplucher les carottes.",
+      "start": "2025-11-19 17:12",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "5",
+      "name": "Couper les carottes en petits dés.",
+      "start": "2025-11-19 17:14",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "6",
+      "name": "Éplucher les pommes de terre.",
+      "start": "2025-11-19 17:19",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "7",
+      "name": "Couper les pommes de terre en petits dés.",
+      "start": "2025-11-19 17:21",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "8",
+      "name": "Couper le poivron en petits dés.",
+      "start": "2025-11-19 17:26",
+      "duration": 3,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "9",
+      "name": "Dans une poêle, ajouter un peu d'huile d'olive et faire chauffer à feu moyen.",
+      "start": "2025-11-19 17:29",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "10",
+      "name": "Ajouter les dés de pommes de terre dans la poêle et les faire revenir pendant 5 minutes.",
+      "start": "2025-11-19 17:31",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "11",
+      "name": "Ajouter les dés de carottes et de poivron dans la poêle avec les pommes de terre et continuer à faire sauter pendant 5 minutes.",
+      "start": "2025-11-19 17:36",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "12",
+      "name": "Dans un bol, casser les oeufs et les battre avec une fourchette.",
+      "start": "2025-11-19 17:41",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "13",
+      "name": "Ajouter les pâtes cuites dans la poêle avec les légumes et mélanger.",
+      "start": "2025-11-19 17:43",
+      "duration": 3,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "14",
+      "name": "Verser les œufs battus sur le mélange de pâtes et de légumes dans la poêle.",
+      "start": "2025-11-19 17:46",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "15",
+      "name": "Si désiré, saupoudrer de fromage râpé sur le dessus du mélange.",
+      "start": "2025-11-19 17:48",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "16",
+      "name": "Transférer le mélange dans un plat allant au four.",
+      "start": "2025-11-19 17:49",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "17",
+      "name": "Enfourner le gratin dans le four préchauffé et cuire pendant 20 minutes.",
+      "start": "2025-11-19 17:51",
+      "duration": 20,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "18",
+      "name": "Vérifier que le gratin est bien doré et cuit à cœur avant de le sortir du four.",
+      "start": "2025-11-19 18:11",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "19",
+      "name": "Laisser reposer quelques minutes avant de servir.",
+      "start": "2025-11-19 18:13",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": []
+    }
+  ],
+  "resources": [],
+  "roles": []
+}

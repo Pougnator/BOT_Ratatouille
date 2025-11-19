@@ -11,6 +11,7 @@ from .states import StateMachine, CookingState
 from .llm_agent import LLMAgent
 from .timer import CookingTimer
 from .hardware_handler import HardwareHandler
+from .gantt_visualizer import GanttVisualizer
 
 
 class CookingAssistant:
@@ -18,8 +19,9 @@ class CookingAssistant:
         self.console = Console()
         self.state_machine = StateMachine()
         self.llm_agent = LLMAgent()
-        self.timer = CookingTimer()
+        self.timer = CookingTimer(console=self.console)
         self.hardware = HardwareHandler()
+        self.gantt_visualizer = GanttVisualizer(console=self.console)
         
         # Use threading Event objects for button communication
         self._next_button_event = threading.Event()
@@ -155,9 +157,27 @@ class CookingAssistant:
                 self.console.print(table)
             
             # Set recipe steps and name
-            steps = recipe_data.get("steps", [])
+            steps_data = recipe_data.get("steps", [])
+            
+            # Extract just the description for display in steps
+            steps = []
+            for step in steps_data:
+                if isinstance(step, dict):
+                    steps.append(step.get("description", ""))
+                else:
+                    steps.append(step)
+                    
             self.state_machine.set_recipe_steps(steps)
             self.state_machine.selected_recipe = recipe_data.get("title", recipe_name)
+            
+            # Store the detailed steps for Gantt chart
+            self.state_machine.detailed_steps = steps_data
+            
+            # Generate and display Gantt chart
+            gantt_data = self._generate_gantt_chart(steps_data)
+            gantt_file = self._save_gantt_chart(gantt_data, recipe_data.get("title", recipe_name))
+            self.console.print(Panel(f"Diagramme de Gantt généré au format JSON pour la planification\nSauvegardé dans: {gantt_file}", title="📊 Planification", border_style="green"))
+            self._display_gantt_data(gantt_data)
             
             return True
         return False
@@ -364,4 +384,109 @@ class CookingAssistant:
             if self.hardware.is_raspi:
                 self.hardware.cleanup()
                 
+            # Clean up timer resources
+            self.timer.cleanup()
+                
             self.console.print("\n[bold cyan]Merci d'avoir fait confiance à Robotatouille! A la prochaine! 👋[/bold cyan]")
+            
+    def _generate_gantt_chart(self, steps_data):
+        """
+        Génère des données au format Gantt Project à partir des étapes détaillées
+        """
+        import json
+        from datetime import datetime, timedelta
+        
+        # Initialiser les données de base du projet Gantt
+        gantt_data = {
+            "tasks": [],
+            "resources": [],
+            "roles": []
+        }
+        
+        # Définir la date et heure de début (maintenant)
+        start_time = datetime.now()
+        
+        # Pour chaque étape, créer une tâche Gantt
+        for i, step in enumerate(steps_data):
+            # Gérer les étapes qui pourraient être des chaînes de caractères plutôt que des objets
+            if isinstance(step, str):
+                task = {
+                    "id": f"task{i+1}",
+                    "name": step,
+                    "start": start_time.strftime("%Y-%m-%d %H:%M"),
+                    "duration": 5, # durée par défaut de 5 minutes
+                    "complete": 0,
+                    "predecessors": []
+                }
+            else:
+                # Obtenir la durée ou utiliser une valeur par défaut
+                duration = step.get("duration_minutes", 5)
+                
+                # Obtenir la description ou utiliser une chaîne vide
+                name = step.get("description", f"Étape {i+1}")
+                
+                # Obtenir l'ID ou en générer un
+                task_id = step.get("id", f"task{i+1}")
+                
+                # Obtenir les dépendances
+                dependencies = step.get("dependencies", [])
+                
+                task = {
+                    "id": task_id,
+                    "name": name,
+                    "start": start_time.strftime("%Y-%m-%d %H:%M"),
+                    "duration": duration,
+                    "complete": 0,
+                    "predecessors": dependencies
+                }
+                
+                # Avancer l'heure de début pour la prochaine tâche
+                start_time = start_time + timedelta(minutes=duration)
+            
+            gantt_data["tasks"].append(task)
+        
+        return gantt_data
+        
+    def _display_gantt_data(self, gantt_data):
+        """
+        Affiche les données du diagramme de Gantt
+        """
+        import json
+        from rich.syntax import Syntax
+        
+        # Convertir en JSON bien formaté
+        gantt_json = json.dumps(gantt_data, indent=2, ensure_ascii=False)
+        
+        # Afficher en tant que JSON coloré
+        syntax = Syntax(gantt_json, "json", theme="monokai", line_numbers=True)
+        self.console.print(syntax)
+        
+    def _save_gantt_chart(self, gantt_data, recipe_name):
+        """
+        Sauvegarde le diagramme de Gantt dans un fichier JSON et génère une visualisation
+        """
+        import json
+        import os
+        from datetime import datetime
+        
+        # Créer un dossier pour les diagrammes s'il n'existe pas
+        gantt_dir = "gantt_charts"
+        os.makedirs(gantt_dir, exist_ok=True)
+        
+        # Générer un nom de fichier basé sur le nom de la recette et la date
+        safe_name = "".join([c if c.isalnum() else "_" for c in recipe_name])
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"{gantt_dir}/{safe_name}_{timestamp}.json"
+        
+        # Écrire les données au format JSON
+        with open(filename, "w", encoding="utf-8") as f:
+            json.dump(gantt_data, f, indent=2, ensure_ascii=False)
+        
+        # Générer une visualisation
+        try:
+            visual_path = self.gantt_visualizer.process_gantt_file(filename, recipe_name)
+            self.console.print(f"[green]✓ Visualisation du diagramme de Gantt sauvegardée: {visual_path}[/green]")
+        except Exception as e:
+            self.console.print(f"[yellow]Note: La visualisation n'a pas pu être générée: {str(e)}[/yellow]")
+            
+        return filename

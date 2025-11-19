@@ -1,0 +1,166 @@
+{
+  "tasks": [
+    {
+      "id": "step1",
+      "name": "Éplucher les patates.",
+      "start": "2025-11-19 16:29",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "step2",
+      "name": "Couper les patates en dés d'environ 1 cm.",
+      "start": "2025-11-19 16:34",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "step3",
+      "name": "Dans une grande poêle, chauffer 2 cuillères à soupe d'huile d'olive à feu moyen.",
+      "start": "2025-11-19 16:39",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "step4",
+      "name": "Ajouter les dés de patates dans la poêle chaude.",
+      "start": "2025-11-19 16:40",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "step5",
+      "name": "Faire frémir les patates pendant environ 15 minutes, en remuant de temps en temps, jusqu'à ce qu'elles soient dorées et tendres.",
+      "start": "2025-11-19 16:41",
+      "duration": 15,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "step6",
+      "name": "Pendant que les patates cuisent, casser les œufs dans un bol.",
+      "start": "2025-11-19 16:56",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "step7",
+      "name": "Battre les œufs avec une fourchette jusqu'à ce qu'ils soient bien mélangés.",
+      "start": "2025-11-19 16:57",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "step8",
+      "name": "Ajouter le sel et le poivre aux œufs battus.",
+      "start": "2025-11-19 16:59",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "step9",
+      "name": "Couper le poivron en dés d'environ 1 cm.",
+      "start": "2025-11-19 17:00",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "step10",
+      "name": "Couper les tomates en dés d'environ 1 cm.",
+      "start": "2025-11-19 17:05",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "step11",
+      "name": "Une fois les patates cuites, ajouter les dés de poivron dans la poêle.",
+      "start": "2025-11-19 17:10",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "step12",
+      "name": "Faire cuire les poivrons avec les patates pendant 5 minutes, jusqu'à ce qu'ils soient légèrement tendres.",
+      "start": "2025-11-19 17:11",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "step13",
+      "name": "Ajouter les dés de tomates dans la poêle et mélanger le tout.",
+      "start": "2025-11-19 17:16",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "step14",
+      "name": "Verser les œufs battus sur les légumes dans la poêle.",
+      "start": "2025-11-19 17:17",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "step15",
+      "name": "Réduire le feu à moyen-doux et cuire pendant environ 8-10 minutes, ou jusqu'à ce que les œufs soient presque pris.",
+      "start": "2025-11-19 17:18",
+      "duration": 10,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "step16",
+      "name": "Utiliser une spatule pour soulever les bords de la tortilla et vérifier si le dessous est doré.",
+      "start": "2025-11-19 17:28",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "step17",
+      "name": "Si le dessous est doré, retourner la tortilla à l'aide d'une assiette.",
+      "start": "2025-11-19 17:29",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "step18",
+      "name": "Faire glisser la tortilla de l'assiette dans la poêle pour cuire l'autre côté pendant environ 5 minutes.",
+      "start": "2025-11-19 17:30",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "step19",
+      "name": "Une fois cuite, retirer la tortilla de la poêle et la placer sur une planche à découper.",
+      "start": "2025-11-19 17:35",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "step20",
+      "name": "Laisser refroidir légèrement avant de couper en parts.",
+      "start": "2025-11-19 17:36",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    }
+  ],
+  "resources": [],
+  "roles": []
+}

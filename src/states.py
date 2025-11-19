@@ -21,6 +21,7 @@ class StateMachine:
         self.selected_recipe = None
         self.current_step = 0
         self.recipe_steps = []
+        self.detailed_steps = []  # Pour stocker les étapes détaillées au format JSON pour le diagramme de Gantt
         self.additional_recipe_request = None
         
     def transition_to(self, new_state: CookingState):
