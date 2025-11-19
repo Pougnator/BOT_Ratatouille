@@ -1,0 +1,101 @@
+{
+  "tasks": [
+    {
+      "id": "1",
+      "name": "Mesurer 1 tasse de riz et le rincer sous l'eau froide pour enlever l'excès d'amidon.",
+      "start": "2025-11-19 17:08",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "2",
+      "name": "Dans une casserole, ajouter 2 tasses d'eau et porter à ébullition.",
+      "start": "2025-11-19 17:10",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "3",
+      "name": "Ajouter le riz dans l'eau bouillante et cuire à feu doux pendant 15 minutes.",
+      "start": "2025-11-19 17:15",
+      "duration": 15,
+      "complete": 0,
+      "predecessors": [
+        "2"
+      ]
+    },
+    {
+      "id": "4",
+      "name": "Pendant ce temps, chauffer 2 cuillères à soupe d'huile d'olive dans une poêle à feu moyen.",
+      "start": "2025-11-19 17:30",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "5",
+      "name": "Ajouter les morceaux de poulet dans la poêle et les faire dorer pendant 5 minutes.",
+      "start": "2025-11-19 17:32",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "4"
+      ]
+    },
+    {
+      "id": "6",
+      "name": "Ajouter les poivrons dans la poêle et faire sauter pendant 3 minutes.",
+      "start": "2025-11-19 17:37",
+      "duration": 3,
+      "complete": 0,
+      "predecessors": [
+        "5"
+      ]
+    },
+    {
+      "id": "7",
+      "name": "Ajouter les tomates coupées en dés dans la poêle et mélanger.",
+      "start": "2025-11-19 17:40",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "6"
+      ]
+    },
+    {
+      "id": "8",
+      "name": "Assaisonner avec 1 cuillère à café de sel, 1 cuillère à café de poivre et 1 cuillère à café de paprika. Bien mélanger et cuire pendant 2 minutes supplémentaires.",
+      "start": "2025-11-19 17:42",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "7"
+      ]
+    },
+    {
+      "id": "9",
+      "name": "Une fois le riz cuit, l'égoutter et l'ajouter dans la poêle avec le poulet et les légumes.",
+      "start": "2025-11-19 17:44",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "3",
+        "8"
+      ]
+    },
+    {
+      "id": "10",
+      "name": "Mélanger le tout pour bien incorporer le riz, le poulet et les légumes. Cuire pendant 2 minutes supplémentaires.",
+      "start": "2025-11-19 17:46",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "9"
+      ]
+    }
+  ],
+  "resources": [],
+  "roles": []
+}

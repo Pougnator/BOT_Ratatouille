@@ -109,42 +109,53 @@ class LLMAgent:
 
     def get_recipe_steps(self, recipe_name: str, ingredients: list, servings: int = 2) -> dict:
         ingredients_str = ", ".join(ingredients)
-        system_prompt = """You are a helpful cooking assistant. Provide a detailed recipe with ingredients and very detailed step-by-step instructions.
+        system_prompt = """Tu es un chef francais, amoureux de la cuisine et de recettes du monde. Tu es un expert très amical et sympatique en cuisine et en recettes. Tu es capable de créer des recettes à partir d'ingrédients et de les détailler en étapes de cuisine.
         
         KEY REQUIREMENTS:
         1. Break down each cooking action into atomic, granular steps (e.g., 'éplucher les carottes', 'couper les patates en dés', etc.).
-        2. Make sure each step focuses on ONE specific action.
+        2. Make sure each step focuses on ONE specific action. 
+        N'oublie pas que les étapes de cuisine sont des actions très précises et détaillées.
+        Par exemple la pluspart d'éléments doivent être épluchés et/ou coupés avant d'être utilisés. 
+        Assures toi que ces étapes, si nécessaires, sont incluses dans les étapes de la recette.
         3. Use precise French cooking terminology.
-        4. MOST IMPORTANT: Create logical dependencies between steps by listing prerequisite steps in the "dependencies" array.
-           - If step B can only be done after step A is completed, then step B should have step A's ID in its dependencies array.
-           - For example, if step 3 (id: "3") requires steps 1 and 2 to be completed first, its dependencies would be ["1", "2"].
-           - Be precise about logical dependencies - for example, water must be boiling before pasta can be added to it.
-           - Parallel tasks (that can be done simultaneously) should NOT depend on each other.
+        4. ABSOLUMENT CRITIQUE : Crée des dépendances logiques détaillées et précises entre les étapes dans le tableau "dependencies".
+           - CHAQUE étape qui transforme ou utilise un ingrédient DOIT dépendre des étapes qui ont préparé cet ingrédient.
+           - Si un ingrédient doit être lavé, épluché, coupé ou préparé, alors TOUTES les étapes ultérieures utilisant cet ingrédient DOIVENT lister ces étapes de préparation comme dépendances.
+           - Par exemple, si l'étape 3 utilise des carottes qui ont été épluchées à l'étape 1 et coupées à l'étape 2, l'étape 3 DOIT avoir ["1", "2"] comme dépendances.
+           - TOUTES les étapes de cuisson DOIVENT dépendre des étapes de préparation correspondantes.
+           - La chaîne de dépendances doit être complète et ininterrompue tout au long de la recette.
+           - La cuisson d'un ingrédient ne peut pas commencer avant que sa préparation ne soit terminée.
+           - Sois extrêmement minutieux - même les dépendances évidentes doivent être explicitement listées.
+           - Les tâches parallèles (qui peuvent être effectuées simultanément avec différents ingrédients) ne doivent PAS dépendre les unes des autres.
         
         Example dependency structure:
-        Step 1: "Éplucher les carottes" - No dependencies, can be done first
-        Step 2: "Couper les carottes en dés" - Depends on step 1 (dependencies: ["1"])
-        Step 3: "Porter l'eau à ébullition" - No dependencies, can be done in parallel with steps 1 and 2
-        Step 4: "Ajouter les pâtes dans l'eau bouillante" - Depends on step 3 (dependencies: ["3"])
-        Step 5: "Ajouter les carottes aux pâtes" - Depends on steps 2 and 4 (dependencies: ["2", "4"])"""
+        Step 1: "Laver les carottes" - Pas de dépendance
+        Step 2: "Éplucher les carottes" - Depend de l'étape 1 (dependencies: ["1"])
+        Step 3: "Couper les carottes en dés" - Depends on step 2 (dependencies: ["2"])
+        Step 4: "Porter l'eau à ébullition" - No dependencies, can be done in parallel with steps 1 and 2 and 3
+        Step 5: "Ajouter les pâtes dans l'eau bouillante" - Depends on step 4 (dependencies: ["4"])
+        Step 6: "Ajouter les carottes aux pâtes" - Depends on steps 3 and 5 (dependencies: ["3", "5"])"""
         
         user_prompt = f"""Give me a recipe for {recipe_name} for {servings} people using these ingredients: {ingredients_str}.
         
-CRITICAL: Make sure to include logical dependencies between the steps!
+ABSOLUTELY CRITICAL: Les dépendances logiques entre les étapes doivent être COMPLÈTES et PRÉCISES!
 
-For example, if your recipe has these steps:
-1. "Éplucher les pommes de terre" (id: "1")
-2. "Couper les pommes de terre en dés" (id: "2")
-3. "Faire bouillir l'eau dans une casserole" (id: "3")
-4. "Cuire les pommes de terre dans l'eau bouillante" (id: "4")
+Pour chaque étape, pose-toi ces questions:
+1. Quels ingrédients sont utilisés dans cette étape?
+2. Quelles étapes préalables ont préparé ou transformé ces ingrédients?
+3. Est-ce que TOUTES ces étapes préalables sont listées comme dépendances?
 
-Then the dependencies should be:
-- Step 1 has no dependencies: []
-- Step 2 depends on step 1: ["1"]
-- Step 3 has no dependencies: []
-- Step 4 depends on steps 2 AND 3: ["2", "3"]
+Exemple détaillé - une recette de risotto:
+1. "Éplucher les oignons" (id: "1") - Pas de dépendance: []
+2. "Hacher finement les oignons" (id: "2") - Dépend de l'étape 1: ["1"] 
+3. "Laver le riz" (id: "3") - Pas de dépendance: []
+4. "Chauffer l'huile d'olive dans une poêle" (id: "4") - Pas de dépendance: []
+5. "Faire revenir les oignons dans l'huile" (id: "5") - Dépend des étapes 2 ET 4: ["2", "4"]
+6. "Ajouter le riz dans la poêle et le nacrer" (id: "6") - Dépend des étapes 3 ET 5: ["3", "5"]
 
-This is essential for creating an accurate timeline!"""
+RAPPEL: Chaque fois qu'un ingrédient est utilisé, TOUTES les étapes de sa préparation doivent être des dépendances!
+
+Ces relations de dépendance sont ESSENTIELLES pour générer un diagramme de Gantt précis et utile!"""
         
         recipe_function = [{
             "name": "format_recipe",
@@ -204,7 +215,7 @@ This is essential for creating an accurate timeline!"""
                                     "items": {
                                         "type": "string"
                                     },
-                                    "description": "IDs of steps that must be completed before this one. IMPORTANT: This should almost never be empty - most cooking steps depend on previous steps!"
+                                    "description": "IDs of ALL prerequisite steps that MUST be completed before this one. CRITICAL: This should be EXHAUSTIVE - include ALL steps that prepared ingredients used in this step. An ingrédient cannot be used before ALL its preparation steps are completed. DO NOT MISS ANY DEPENDENCY!"
                                 }
                             },
                             "required": ["id", "description", "duration_minutes"]
@@ -253,3 +264,5 @@ This is essential for creating an accurate timeline!"""
             
     def reset_conversation(self):
         self.conversation_history = []
+        
+    # Fonction de raccourcissement des étapes supprimée

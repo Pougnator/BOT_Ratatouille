@@ -11,7 +11,8 @@ from .states import StateMachine, CookingState
 from .llm_agent import LLMAgent
 from .timer import CookingTimer
 from .hardware_handler import HardwareHandler
-from .gantt_visualizer import GanttVisualizer
+# Visualisateur Gantt supprimé
+from .ganttproject_exporter import GanttProjectExporter
 
 
 class CookingAssistant:
@@ -21,7 +22,8 @@ class CookingAssistant:
         self.llm_agent = LLMAgent()
         self.timer = CookingTimer(console=self.console)
         self.hardware = HardwareHandler()
-        self.gantt_visualizer = GanttVisualizer(console=self.console)
+        # Visualisateur Gantt supprimé
+        self.gantt_exporter = GanttProjectExporter(console=self.console)
         
         # Use threading Event objects for button communication
         self._next_button_event = threading.Event()
@@ -173,11 +175,23 @@ class CookingAssistant:
             # Store the detailed steps for Gantt chart
             self.state_machine.detailed_steps = steps_data
             
-            # Generate and display Gantt chart
+            # Générer le diagramme de Gantt
             gantt_data = self._generate_gantt_chart(steps_data)
             gantt_file = self._save_gantt_chart(gantt_data, recipe_data.get("title", recipe_name))
-            self.console.print(Panel(f"Diagramme de Gantt généré au format JSON pour la planification\nSauvegardé dans: {gantt_file}", title="📊 Planification", border_style="green"))
-            self._display_gantt_data(gantt_data)
+            
+            # Générer uniquement le fichier au format GanttProject (.gan)
+            gan_file = self.gantt_exporter.export_to_ganttproject(
+                gantt_data, 
+                recipe_name=recipe_data.get("title", recipe_name)
+            )
+            
+            self.console.print(Panel(
+                f"Diagrammes de Gantt générés pour la planification:\n"
+                f"• Format JSON: {gantt_file}\n"
+                f"• Format GanttProject: {gan_file}", 
+                title="📊 Planification", 
+                border_style="green"
+            ))
             
             return True
         return False
@@ -447,23 +461,11 @@ class CookingAssistant:
         
         return gantt_data
         
-    def _display_gantt_data(self, gantt_data):
-        """
-        Affiche les données du diagramme de Gantt
-        """
-        import json
-        from rich.syntax import Syntax
-        
-        # Convertir en JSON bien formaté
-        gantt_json = json.dumps(gantt_data, indent=2, ensure_ascii=False)
-        
-        # Afficher en tant que JSON coloré
-        syntax = Syntax(gantt_json, "json", theme="monokai", line_numbers=True)
-        self.console.print(syntax)
+    # Méthode d'affichage du Gantt supprimée
         
     def _save_gantt_chart(self, gantt_data, recipe_name):
         """
-        Sauvegarde le diagramme de Gantt dans un fichier JSON et génère une visualisation
+        Sauvegarde le diagramme de Gantt dans un fichier JSON
         """
         import json
         import os
@@ -481,12 +483,5 @@ class CookingAssistant:
         # Écrire les données au format JSON
         with open(filename, "w", encoding="utf-8") as f:
             json.dump(gantt_data, f, indent=2, ensure_ascii=False)
-        
-        # Générer une visualisation
-        try:
-            visual_path = self.gantt_visualizer.process_gantt_file(filename, recipe_name)
-            self.console.print(f"[green]✓ Visualisation du diagramme de Gantt sauvegardée: {visual_path}[/green]")
-        except Exception as e:
-            self.console.print(f"[yellow]Note: La visualisation n'a pas pu être générée: {str(e)}[/yellow]")
             
         return filename

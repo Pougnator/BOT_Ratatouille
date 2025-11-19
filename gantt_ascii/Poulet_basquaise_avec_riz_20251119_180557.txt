@@ -1,0 +1,20 @@
+=================================================================================================
+                          Diagramme de Gantt: Poulet basquaise avec riz                          
+=================================================================================================
+
+Éplucher les tomates en les... | =
+Concasser les tomates pelées.  | = ⬅ 1:Épluc
+Chauffer une poêle avec de ... | ==
+Dorer le poulet de chaque c... | =5m== ⬅ 3:Chauf
+Ajouter les tomates au poulet. | = ⬅ 2:Conca, 4:Dorer
+Assaisonner avec sel et poi... | = ⬅ 5:Ajout
+Couvrir et mijoter 20 minutes. | =20m================ ⬅ 6:Assai
+Porter 400 ml d'eau à ébull... | =5m==
+Cuire le riz 10-12 minutes.    | =12m======== ⬅ 8:Porte
+Égoutter le riz et servir.     | == ⬅ 9:Cuire
+Servir le poulet chaud sur ... | = ⬅ 7:Couvr, 10:Égout
+
+-------------------------------------------------------------------------------------------------
+Légende: • Chaque '=' représente 1 minute  • Durée totale estimée: 51 minutes
+         • La notation 'ID:Nom' après '⬅' indique les dépendances (étapes préalables requises)
+=================================================================================================

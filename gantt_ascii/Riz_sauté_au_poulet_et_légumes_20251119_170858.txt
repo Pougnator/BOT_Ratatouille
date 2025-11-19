@@ -1,0 +1,25 @@
+==========================================================================================
+                    Diagramme de Gantt: Riz sauté au poulet et légumes                    
+==========================================================================================
+1. Mesurer 1 tasse de riz et   |==                                                     
+2. Dans une casserole, ajoute  |  =5m==                                                
+3. Ajouter le riz dans l'eau   |       ######15m######                                 
+                               | ↑2                                                       
+4. Pendant ce temps, chauffer  |                      ==                               
+5. Ajouter les morceaux de po  |                        #5m##                          
+                               | ↑4                                                       
+6. Ajouter les poivrons dans   |                             ###                       
+                               | ↑5                                                       
+7. Ajouter les tomates coupée  |                                ##                     
+                               | ↑6                                                       
+8. Assaisonner avec 1 cuillèr  |                                  ##                   
+                               | ↑7                                                       
+9. Une fois le riz cuit, l'ég  |                                    ##                 
+                               | ↑3 ↑8                                                    
+10. Mélanger le tout pour ...  |                                      ##               
+                               | ↑9                                                       
+------------------------------------------------------------------------------------------
+                                +----+----+----+----+----+----+----+----+----+----+----
+                                
+==========================================================================================
+Durée totale estimée: 40 minutes

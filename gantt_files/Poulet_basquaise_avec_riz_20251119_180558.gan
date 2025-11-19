@@ -1,0 +1,38 @@
+<?xml version="1.0" ?>
+<project name="Poulet basquaise avec riz" company="Robotatouille" webLink="" view-date="2025-11-19" version="3.2.3230" view-index="0">
+  <description>Diagramme de Gantt pour la recette: Poulet basquaise avec riz</description>
+  <tasks>
+    <task id="1" name="Éplucher les tomates en les blanchissant." start="20411" duration="0.0020833333333333333" complete="0" expand="true" cost-manual-value="0.0" cost-calculated="false"/>
+    <task id="2" name="Concasser les tomates pelées." start="20411" duration="0.0020833333333333333" complete="0" expand="true" cost-manual-value="0.0" cost-calculated="false">
+      <depend id="1" type="2" difference="0" hardness="Strong"/>
+    </task>
+    <task id="3" name="Chauffer une poêle avec de l'huile." start="20411" duration="0.004166666666666667" complete="0" expand="true" cost-manual-value="0.0" cost-calculated="false"/>
+    <task id="4" name="Dorer le poulet de chaque côté." start="20411" duration="0.010416666666666666" complete="0" expand="true" cost-manual-value="0.0" cost-calculated="false">
+      <depend id="3" type="2" difference="0" hardness="Strong"/>
+    </task>
+    <task id="5" name="Ajouter les tomates au poulet." start="20411" duration="0.0020833333333333333" complete="0" expand="true" cost-manual-value="0.0" cost-calculated="false">
+      <depend id="2" type="2" difference="0" hardness="Strong"/>
+      <depend id="4" type="2" difference="0" hardness="Strong"/>
+    </task>
+    <task id="6" name="Assaisonner avec sel et poivre." start="20411" duration="0.0020833333333333333" complete="0" expand="true" cost-manual-value="0.0" cost-calculated="false">
+      <depend id="5" type="2" difference="0" hardness="Strong"/>
+    </task>
+    <task id="7" name="Couvrir et mijoter 20 minutes." start="20411" duration="0.041666666666666664" complete="0" expand="true" cost-manual-value="0.0" cost-calculated="false">
+      <depend id="6" type="2" difference="0" hardness="Strong"/>
+    </task>
+    <task id="8" name="Porter 400 ml d'eau à ébullition." start="20411" duration="0.010416666666666666" complete="0" expand="true" cost-manual-value="0.0" cost-calculated="false"/>
+    <task id="9" name="Cuire le riz 10-12 minutes." start="20411" duration="0.025" complete="0" expand="true" cost-manual-value="0.0" cost-calculated="false">
+      <depend id="8" type="2" difference="0" hardness="Strong"/>
+    </task>
+    <task id="10" name="Égoutter le riz et servir." start="20411" duration="0.004166666666666667" complete="0" expand="true" cost-manual-value="0.0" cost-calculated="false">
+      <depend id="9" type="2" difference="0" hardness="Strong"/>
+    </task>
+    <task id="11" name="Servir le poulet chaud sur le riz." start="20411" duration="0.0020833333333333333" complete="0" expand="true" cost-manual-value="0.0" cost-calculated="false">
+      <depend id="7" type="2" difference="0" hardness="Strong"/>
+      <depend id="10" type="2" difference="0" hardness="Strong"/>
+    </task>
+  </tasks>
+  <resources/>
+  <allocations/>
+  <vacations/>
+</project>

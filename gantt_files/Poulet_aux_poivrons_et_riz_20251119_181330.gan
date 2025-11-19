@@ -1,0 +1,41 @@
+<?xml version="1.0" ?>
+<project name="Poulet aux poivrons et riz" company="Robotatouille" webLink="" view-date="2025-11-19" version="3.2.3230" view-index="0">
+  <description>Diagramme de Gantt pour la recette: Poulet aux poivrons et riz</description>
+  <tasks>
+    <task id="1" name="Laver les tomates sous l'eau courante." start="20411" duration="0.004166666666666667" complete="0" expand="true" cost-manual-value="0.0" cost-calculated="false"/>
+    <task id="2" name="Couper les tomates en dés." start="20411" duration="0.010416666666666666" complete="0" expand="true" cost-manual-value="0.0" cost-calculated="false">
+      <depend id="1" type="2" difference="0" hardness="Strong"/>
+    </task>
+    <task id="3" name="Laver les poivrons sous l'eau courante." start="20411" duration="0.004166666666666667" complete="0" expand="true" cost-manual-value="0.0" cost-calculated="false"/>
+    <task id="4" name="Couper les poivrons en lanières." start="20411" duration="0.010416666666666666" complete="0" expand="true" cost-manual-value="0.0" cost-calculated="false">
+      <depend id="3" type="2" difference="0" hardness="Strong"/>
+    </task>
+    <task id="5" name="Chauffer l'huile d'olive dans une grande poêle à feu moyen." start="20411" duration="0.004166666666666667" complete="0" expand="true" cost-manual-value="0.0" cost-calculated="false"/>
+    <task id="6" name="Ajouter les morceaux de poulet dans la poêle et les faire dorer pendant 5 minutes." start="20411" duration="0.010416666666666666" complete="0" expand="true" cost-manual-value="0.0" cost-calculated="false">
+      <depend id="5" type="2" difference="0" hardness="Strong"/>
+    </task>
+    <task id="7" name="Ajouter les poivrons dans la poêle et cuire pendant 3 minutes jusqu'à ce qu'ils soient tendres." start="20411" duration="0.00625" complete="0" expand="true" cost-manual-value="0.0" cost-calculated="false">
+      <depend id="4" type="2" difference="0" hardness="Strong"/>
+      <depend id="6" type="2" difference="0" hardness="Strong"/>
+    </task>
+    <task id="8" name="Ajouter les tomates en dés dans la poêle et remuer le tout." start="20411" duration="0.004166666666666667" complete="0" expand="true" cost-manual-value="0.0" cost-calculated="false">
+      <depend id="2" type="2" difference="0" hardness="Strong"/>
+      <depend id="7" type="2" difference="0" hardness="Strong"/>
+    </task>
+    <task id="9" name="Ajouter le riz rincé dans la poêle et mélanger." start="20411" duration="0.004166666666666667" complete="0" expand="true" cost-manual-value="0.0" cost-calculated="false">
+      <depend id="8" type="2" difference="0" hardness="Strong"/>
+    </task>
+    <task id="10" name="Ajouter 600 ml d'eau dans la poêle et assaisonner avec le sel et le poivre." start="20411" duration="0.004166666666666667" complete="0" expand="true" cost-manual-value="0.0" cost-calculated="false">
+      <depend id="9" type="2" difference="0" hardness="Strong"/>
+    </task>
+    <task id="11" name="Porter le mélange à ébullition." start="20411" duration="0.010416666666666666" complete="0" expand="true" cost-manual-value="0.0" cost-calculated="false">
+      <depend id="10" type="2" difference="0" hardness="Strong"/>
+    </task>
+    <task id="12" name="Réduire le feu à doux, couvrir la poêle et laisser mijoter pendant 20 minutes, jusqu'à ce que le riz soit cuit et que l'eau soit absorbée." start="20411" duration="0.041666666666666664" complete="0" expand="true" cost-manual-value="0.0" cost-calculated="false">
+      <depend id="11" type="2" difference="0" hardness="Strong"/>
+    </task>
+  </tasks>
+  <resources/>
+  <allocations/>
+  <vacations/>
+</project>

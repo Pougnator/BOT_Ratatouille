@@ -1,0 +1,112 @@
+{
+  "tasks": [
+    {
+      "id": "1",
+      "name": "Éplucher les tomates en les blanchissant.",
+      "start": "2025-11-19 18:05",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "2",
+      "name": "Concasser les tomates pelées.",
+      "start": "2025-11-19 18:06",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": [
+        "1"
+      ]
+    },
+    {
+      "id": "3",
+      "name": "Chauffer une poêle avec de l'huile.",
+      "start": "2025-11-19 18:07",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "4",
+      "name": "Dorer le poulet de chaque côté.",
+      "start": "2025-11-19 18:09",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "3"
+      ]
+    },
+    {
+      "id": "5",
+      "name": "Ajouter les tomates au poulet.",
+      "start": "2025-11-19 18:14",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": [
+        "2",
+        "4"
+      ]
+    },
+    {
+      "id": "6",
+      "name": "Assaisonner avec sel et poivre.",
+      "start": "2025-11-19 18:15",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": [
+        "5"
+      ]
+    },
+    {
+      "id": "7",
+      "name": "Couvrir et mijoter 20 minutes.",
+      "start": "2025-11-19 18:16",
+      "duration": 20,
+      "complete": 0,
+      "predecessors": [
+        "6"
+      ]
+    },
+    {
+      "id": "8",
+      "name": "Porter 400 ml d'eau à ébullition.",
+      "start": "2025-11-19 18:36",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "9",
+      "name": "Cuire le riz 10-12 minutes.",
+      "start": "2025-11-19 18:41",
+      "duration": 12,
+      "complete": 0,
+      "predecessors": [
+        "8"
+      ]
+    },
+    {
+      "id": "10",
+      "name": "Égoutter le riz et servir.",
+      "start": "2025-11-19 18:53",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "9"
+      ]
+    },
+    {
+      "id": "11",
+      "name": "Servir le poulet chaud sur le riz.",
+      "start": "2025-11-19 18:55",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": [
+        "7",
+        "10"
+      ]
+    }
+  ],
+  "resources": [],
+  "roles": []
+}

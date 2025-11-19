@@ -1,0 +1,102 @@
+{
+  "tasks": [
+    {
+      "id": "1",
+      "name": "Laver les tomates sous l'eau froide.",
+      "start": "2025-11-19 18:16",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "2",
+      "name": "Couper les tomates en dés.",
+      "start": "2025-11-19 18:18",
+      "duration": 3,
+      "complete": 0,
+      "predecessors": [
+        "1"
+      ]
+    },
+    {
+      "id": "3",
+      "name": "Saler et poivrer les morceaux de poulet.",
+      "start": "2025-11-19 18:21",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "4",
+      "name": "Chauffer une grande poêle à feu moyen avec un peu d'huile.",
+      "start": "2025-11-19 18:23",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "5",
+      "name": "Ajouter les morceaux de poulet dans la poêle chaude.",
+      "start": "2025-11-19 18:25",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "3",
+        "4"
+      ]
+    },
+    {
+      "id": "6",
+      "name": "Faire dorer les morceaux de poulet pendant 5 minutes de chaque côté.",
+      "start": "2025-11-19 18:30",
+      "duration": 10,
+      "complete": 0,
+      "predecessors": [
+        "5"
+      ]
+    },
+    {
+      "id": "7",
+      "name": "Ajouter les dés de tomates dans la poêle avec le poulet.",
+      "start": "2025-11-19 18:40",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "2",
+        "6"
+      ]
+    },
+    {
+      "id": "8",
+      "name": "Ajouter 600 ml d'eau dans la poêle et porter à ébullition.",
+      "start": "2025-11-19 18:42",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "7"
+      ]
+    },
+    {
+      "id": "9",
+      "name": "Ajouter le riz dans la poêle ainsi que du sel.",
+      "start": "2025-11-19 18:47",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": [
+        "8"
+      ]
+    },
+    {
+      "id": "10",
+      "name": "Réduire le feu et couvrir la poêle, cuire pendant 20 minutes.",
+      "start": "2025-11-19 18:48",
+      "duration": 20,
+      "complete": 0,
+      "predecessors": [
+        "9"
+      ]
+    }
+  ],
+  "resources": [],
+  "roles": []
+}
