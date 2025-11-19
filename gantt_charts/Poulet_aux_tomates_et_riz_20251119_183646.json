@@ -1,0 +1,121 @@
+{
+  "tasks": [
+    {
+      "id": "1",
+      "name": "Laver les tomates sous l'eau froide.",
+      "start": "2025-11-19 18:36",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "2",
+      "name": "Couper les tomates en dés.",
+      "start": "2025-11-19 18:38",
+      "duration": 3,
+      "complete": 0,
+      "predecessors": [
+        "1"
+      ]
+    },
+    {
+      "id": "3",
+      "name": "Découper le poulet en morceaux.",
+      "start": "2025-11-19 18:41",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "4",
+      "name": "Rincer le riz sous l'eau froide jusqu'à ce que l'eau soit claire.",
+      "start": "2025-11-19 18:46",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "5",
+      "name": "Dans une grande casserole, chauffer un peu d'huile d'olive à feu moyen.",
+      "start": "2025-11-19 18:48",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "6",
+      "name": "Ajouter les morceaux de poulet dans la casserole et les faire dorer pendant 5 minutes en remuant régulièrement.",
+      "start": "2025-11-19 18:50",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "3",
+        "5"
+      ]
+    },
+    {
+      "id": "7",
+      "name": "Ajouter les dés de tomates dans la casserole avec le poulet et mélanger.",
+      "start": "2025-11-19 18:55",
+      "duration": 3,
+      "complete": 0,
+      "predecessors": [
+        "2",
+        "6"
+      ]
+    },
+    {
+      "id": "8",
+      "name": "Ajouter le riz dans la casserole et mélanger avec le poulet et les tomates.",
+      "start": "2025-11-19 18:58",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "4",
+        "7"
+      ]
+    },
+    {
+      "id": "9",
+      "name": "Ajouter 400 ml d'eau dans la casserole et porter à ébullition.",
+      "start": "2025-11-19 19:00",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "8"
+      ]
+    },
+    {
+      "id": "10",
+      "name": "Réduire le feu, couvrir la casserole et laisser mijoter pendant 15 minutes jusqu'à ce que le riz soit cuit.",
+      "start": "2025-11-19 19:05",
+      "duration": 15,
+      "complete": 0,
+      "predecessors": [
+        "9"
+      ]
+    },
+    {
+      "id": "11",
+      "name": "Retirer la casserole du feu et laisser reposer couvert pendant 5 minutes.",
+      "start": "2025-11-19 19:20",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "10"
+      ]
+    },
+    {
+      "id": "12",
+      "name": "Servir chaud dans des assiettes.",
+      "start": "2025-11-19 19:25",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "11"
+      ]
+    }
+  ],
+  "resources": [],
+  "roles": []
+}

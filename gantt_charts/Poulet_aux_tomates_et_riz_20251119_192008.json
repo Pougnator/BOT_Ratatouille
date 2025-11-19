@@ -1,0 +1,112 @@
+{
+  "tasks": [
+    {
+      "id": "1",
+      "name": "Laver les tomates sous l'eau froide.",
+      "start": "2025-11-19 19:20",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "2",
+      "name": "Couper les tomates en dés.",
+      "start": "2025-11-19 19:21",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "1"
+      ]
+    },
+    {
+      "id": "3",
+      "name": "Assaisonner les morceaux de poulet avec du sel et du poivre.",
+      "start": "2025-11-19 19:23",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "4",
+      "name": "Chauffer de l'huile d'olive dans une poêle à feu moyen.",
+      "start": "2025-11-19 19:24",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "5",
+      "name": "Faire dorer les morceaux de poulet dans la poêle pendant 5 minutes de chaque côté.",
+      "start": "2025-11-19 19:26",
+      "duration": 10,
+      "complete": 0,
+      "predecessors": [
+        "3",
+        "4"
+      ]
+    },
+    {
+      "id": "6",
+      "name": "Ajouter les tomates en dés dans la poêle avec le poulet.",
+      "start": "2025-11-19 19:36",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "2",
+        "5"
+      ]
+    },
+    {
+      "id": "7",
+      "name": "Ajouter le riz dans la poêle avec le poulet et les tomates.",
+      "start": "2025-11-19 19:38",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": [
+        "6"
+      ]
+    },
+    {
+      "id": "8",
+      "name": "Ajouter 400 ml d'eau dans la poêle.",
+      "start": "2025-11-19 19:39",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": [
+        "7"
+      ]
+    },
+    {
+      "id": "9",
+      "name": "Porter à ébullition, puis réduire le feu et couvrir la poêle.",
+      "start": "2025-11-19 19:40",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": [
+        "8"
+      ]
+    },
+    {
+      "id": "10",
+      "name": "Laisser mijoter pendant 20 minutes jusqu'à ce que le riz soit cuit et que l'eau soit absorbée.",
+      "start": "2025-11-19 19:41",
+      "duration": 20,
+      "complete": 0,
+      "predecessors": [
+        "9"
+      ]
+    },
+    {
+      "id": "11",
+      "name": "Éteindre le feu et laisser reposer le plat pendant 5 minutes avant de servir.",
+      "start": "2025-11-19 20:01",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "10"
+      ]
+    }
+  ],
+  "resources": [],
+  "roles": []
+}

@@ -1,0 +1,55 @@
+<?xml version="1.0" ?>
+<project name="Poulet aux tomates et riz" company="Robotatouille" webLink="" view-date="2025-11-19" version="3.2.3230" view-index="0" project-start="2025-11-19" scheduling-mode="0" resourcefiles-overwrite="true" exportFrozenColumns="" coordinates="true">
+  <calendar>
+    <days-off/>
+  </calendar>
+  <description>Diagramme de Gantt pour la recette: Poulet aux tomates et riz</description>
+  <tasks>
+    <task id="1" name="Laver les tomates sous l'eau froide." start="20411" duration="4" complete="0" expand="true" cost-manual-value="0.0" cost-calculated="false"/>
+    <task id="2" name="Couper les tomates en dés." start="20411" duration="6" complete="0" expand="true" cost-manual-value="0.0" cost-calculated="false">
+      <depend id="1" type="2" difference="0" hardness="Strong"/>
+    </task>
+    <task id="3" name="Découper le poulet en morceaux." start="20411" duration="10" complete="0" expand="true" cost-manual-value="0.0" cost-calculated="false"/>
+    <task id="4" name="Rincer le riz sous l'eau froide jusqu'à ce que l'eau soit claire." start="20411" duration="4" complete="0" expand="true" cost-manual-value="0.0" cost-calculated="false"/>
+    <task id="5" name="Dans une grande casserole, chauffer un peu d'huile d'olive à feu moyen." start="20411" duration="4" complete="0" expand="true" cost-manual-value="0.0" cost-calculated="false"/>
+    <task id="6" name="Ajouter les morceaux de poulet dans la casserole et les faire dorer pendant 5 minutes en remuant régulièrement." start="20411" duration="10" complete="0" expand="true" cost-manual-value="0.0" cost-calculated="false">
+      <depend id="3" type="2" difference="0" hardness="Strong"/>
+      <depend id="5" type="2" difference="0" hardness="Strong"/>
+    </task>
+    <task id="7" name="Ajouter les dés de tomates dans la casserole avec le poulet et mélanger." start="20411" duration="6" complete="0" expand="true" cost-manual-value="0.0" cost-calculated="false">
+      <depend id="2" type="2" difference="0" hardness="Strong"/>
+      <depend id="6" type="2" difference="0" hardness="Strong"/>
+    </task>
+    <task id="8" name="Ajouter le riz dans la casserole et mélanger avec le poulet et les tomates." start="20411" duration="4" complete="0" expand="true" cost-manual-value="0.0" cost-calculated="false">
+      <depend id="4" type="2" difference="0" hardness="Strong"/>
+      <depend id="7" type="2" difference="0" hardness="Strong"/>
+    </task>
+    <task id="9" name="Ajouter 400 ml d'eau dans la casserole et porter à ébullition." start="20411" duration="10" complete="0" expand="true" cost-manual-value="0.0" cost-calculated="false">
+      <depend id="8" type="2" difference="0" hardness="Strong"/>
+    </task>
+    <task id="10" name="Réduire le feu, couvrir la casserole et laisser mijoter pendant 15 minutes jusqu'à ce que le riz soit cuit." start="20411" duration="31" complete="0" expand="true" cost-manual-value="0.0" cost-calculated="false">
+      <depend id="9" type="2" difference="0" hardness="Strong"/>
+    </task>
+    <task id="11" name="Retirer la casserole du feu et laisser reposer couvert pendant 5 minutes." start="20411" duration="10" complete="0" expand="true" cost-manual-value="0.0" cost-calculated="false">
+      <depend id="10" type="2" difference="0" hardness="Strong"/>
+    </task>
+    <task id="12" name="Servir chaud dans des assiettes." start="20411" duration="4" complete="0" expand="true" cost-manual-value="0.0" cost-calculated="false">
+      <depend id="11" type="2" difference="0" hardness="Strong"/>
+    </task>
+  </tasks>
+  <taskproperties>
+    <taskproperty id="tpd0" name="type" type="default" valuetype="icon"/>
+    <taskproperty id="tpd1" name="priority" type="default" valuetype="icon"/>
+    <taskproperty id="tpd2" name="info" type="default" valuetype="string"/>
+    <taskproperty id="tpd3" name="name" type="default" valuetype="string"/>
+    <taskproperty id="tpd4" name="begindate" type="default" valuetype="date"/>
+    <taskproperty id="tpd5" name="enddate" type="default" valuetype="date"/>
+    <taskproperty id="tpd6" name="duration" type="default" valuetype="int"/>
+    <taskproperty id="tpd7" name="completion" type="default" valuetype="int"/>
+    <taskproperty id="tpd8" name="coordinator" type="default" valuetype="string"/>
+    <taskproperty id="tpd9" name="predecessorsr" type="default" valuetype="string"/>
+  </taskproperties>
+  <resources/>
+  <allocations/>
+  <vacations/>
+</project>

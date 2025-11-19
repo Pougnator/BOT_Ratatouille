@@ -11,8 +11,7 @@ from .states import StateMachine, CookingState
 from .llm_agent import LLMAgent
 from .timer import CookingTimer
 from .hardware_handler import HardwareHandler
-# Visualisateur Gantt supprimé
-from .ganttproject_exporter import GanttProjectExporter
+from .plotly_gantt import PlotlyGanttVisualizer
 
 
 class CookingAssistant:
@@ -22,8 +21,7 @@ class CookingAssistant:
         self.llm_agent = LLMAgent()
         self.timer = CookingTimer(console=self.console)
         self.hardware = HardwareHandler()
-        # Visualisateur Gantt supprimé
-        self.gantt_exporter = GanttProjectExporter(console=self.console)
+        self.gantt_visualizer = PlotlyGanttVisualizer(console=self.console)
         
         # Use threading Event objects for button communication
         self._next_button_event = threading.Event()
@@ -179,16 +177,16 @@ class CookingAssistant:
             gantt_data = self._generate_gantt_chart(steps_data)
             gantt_file = self._save_gantt_chart(gantt_data, recipe_data.get("title", recipe_name))
             
-            # Générer uniquement le fichier au format GanttProject (.gan)
-            gan_file = self.gantt_exporter.export_to_ganttproject(
-                gantt_data, 
+            # Créer la visualisation Plotly interactive
+            result = self.gantt_visualizer.process_gantt_file(
+                gantt_file,
                 recipe_name=recipe_data.get("title", recipe_name)
             )
             
             self.console.print(Panel(
-                f"Diagrammes de Gantt générés pour la planification:\n"
+                f"Diagramme de Gantt généré :\n"
                 f"• Format JSON: {gantt_file}\n"
-                f"• Format GanttProject: {gan_file}", 
+                f"• Visualisation HTML interactive: {result['html_file']}",
                 title="📊 Planification", 
                 border_style="green"
             ))

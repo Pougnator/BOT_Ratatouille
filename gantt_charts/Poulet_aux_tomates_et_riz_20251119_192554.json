@@ -1,0 +1,101 @@
+{
+  "tasks": [
+    {
+      "id": "1",
+      "name": "Laver les tomates sous l'eau froide.",
+      "start": "2025-11-19 19:25",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "2",
+      "name": "Couper les tomates en dés.",
+      "start": "2025-11-19 19:27",
+      "duration": 3,
+      "complete": 0,
+      "predecessors": [
+        "1"
+      ]
+    },
+    {
+      "id": "3",
+      "name": "Découper le poulet en morceaux.",
+      "start": "2025-11-19 19:30",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "4",
+      "name": "Rincer le riz sous l'eau froide.",
+      "start": "2025-11-19 19:35",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "5",
+      "name": "Chauffer une poêle à feu moyen et ajouter un peu d'huile d'olive.",
+      "start": "2025-11-19 19:37",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "6",
+      "name": "Faire revenir les morceaux de poulet dans la poêle jusqu'à ce qu'ils soient dorés, environ 5 minutes.",
+      "start": "2025-11-19 19:39",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "3",
+        "5"
+      ]
+    },
+    {
+      "id": "7",
+      "name": "Ajouter les tomates en dés dans la poêle avec le poulet et cuire pendant 5 minutes.",
+      "start": "2025-11-19 19:44",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "2",
+        "6"
+      ]
+    },
+    {
+      "id": "8",
+      "name": "Ajouter le riz dans la poêle avec le poulet et les tomates.",
+      "start": "2025-11-19 19:49",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "4",
+        "7"
+      ]
+    },
+    {
+      "id": "9",
+      "name": "Ajouter 2 tasses d'eau dans la poêle et porter à ébullition.",
+      "start": "2025-11-19 19:51",
+      "duration": 3,
+      "complete": 0,
+      "predecessors": [
+        "8"
+      ]
+    },
+    {
+      "id": "10",
+      "name": "Réduire le feu, couvrir la poêle et laisser mijoter pendant 15 minutes jusqu'à ce que le riz soit cuit.",
+      "start": "2025-11-19 19:54",
+      "duration": 15,
+      "complete": 0,
+      "predecessors": [
+        "9"
+      ]
+    }
+  ],
+  "resources": [],
+  "roles": []
+}
