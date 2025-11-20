@@ -1,0 +1,142 @@
+{
+  "tasks": [
+    {
+      "id": "1",
+      "name": "Laver les lentilles sous l'eau froide pour éliminer les impuretés.",
+      "start": "2025-11-20 10:37",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "2",
+      "name": "Éplucher les pommes de terre.",
+      "start": "2025-11-20 10:42",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "1"
+      ]
+    },
+    {
+      "id": "3",
+      "name": "Couper les pommes de terre en dés d'environ 1 cm.",
+      "start": "2025-11-20 10:47",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "2"
+      ]
+    },
+    {
+      "id": "4",
+      "name": "Laver les tomates sous l'eau froide.",
+      "start": "2025-11-20 10:52",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "5",
+      "name": "Couper les tomates en quartiers.",
+      "start": "2025-11-20 10:54",
+      "duration": 3,
+      "complete": 0,
+      "predecessors": [
+        "4"
+      ]
+    },
+    {
+      "id": "6",
+      "name": "Dans une casserole, porter 1 litre d'eau à ébullition.",
+      "start": "2025-11-20 10:57",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "7",
+      "name": "Ajouter les lentilles à l'eau bouillante et cuire pendant 20 minutes.",
+      "start": "2025-11-20 11:02",
+      "duration": 20,
+      "complete": 0,
+      "predecessors": [
+        "1",
+        "6"
+      ]
+    },
+    {
+      "id": "8",
+      "name": "Dans une poêle, chauffer un filet d'huile d'olive à feu moyen.",
+      "start": "2025-11-20 11:22",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "9",
+      "name": "Ajouter les dés de pommes de terre dans la poêle et faire sauter pendant 10 minutes jusqu'à ce qu'ils soient dorés.",
+      "start": "2025-11-20 11:24",
+      "duration": 10,
+      "complete": 0,
+      "predecessors": [
+        "3",
+        "8"
+      ]
+    },
+    {
+      "id": "10",
+      "name": "Ajouter les quartiers de tomates à la poêle avec les pommes de terre et cuire pendant 5 minutes.",
+      "start": "2025-11-20 11:34",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "5",
+        "9"
+      ]
+    },
+    {
+      "id": "11",
+      "name": "Préchauffer une petite casserole à feu doux et ajouter les lentilles cuites.",
+      "start": "2025-11-20 11:39",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "7"
+      ]
+    },
+    {
+      "id": "12",
+      "name": "Faire un puits au centre des lentilles et casser un œuf à l'intérieur.",
+      "start": "2025-11-20 11:41",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": [
+        "11"
+      ]
+    },
+    {
+      "id": "13",
+      "name": "Couvrir la casserole et cuire à feu doux pendant environ 5 minutes, jusqu'à ce que le blanc de l'œuf soit cuit mais le jaune reste coulant.",
+      "start": "2025-11-20 11:42",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "12"
+      ]
+    },
+    {
+      "id": "14",
+      "name": "Servir les lentilles avec l'œuf cocotte sur le dessus et les pommes de terre sautées avec les tomates sur le côté.",
+      "start": "2025-11-20 11:47",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "10",
+        "13"
+      ]
+    }
+  ],
+  "resources": [],
+  "roles": []
+}

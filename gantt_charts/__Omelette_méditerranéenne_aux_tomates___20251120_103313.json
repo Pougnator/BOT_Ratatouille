@@ -1,0 +1,14 @@
+{
+  "tasks": [
+    {
+      "id": "task1",
+      "name": "{\"title\":\"Omelette méditerranéenne aux tomates\",\"ingredients\":[{\"quantity\":\"4\",\"unit\":\"pièces\",\"name\":\"œufs\"},{\"quantity\":\"1\",\"unit\":\"tasse\",\"name\":\"riz\",\"preparation\":\"cuit\"},{\"quantity\":\"2\",\"unit\":\"pièces\",\"name\":\"tomates\",\"preparation\":\"coupées en dés\"}],\"steps\":[{\"id\":\"1\",\"description\":\"Laver les tomates sous l'eau froide.\",\"duration_minutes\":1,\"dependencies\":[]},{\"id\":\"2\",\"description\":\"Couper les tomates en dés.\",\"duration_minutes\":2,\"dependencies\":[\"1\"]},{\"id\":\"3\",\"description\":\"Casser les œufs dans un bol.\",\"duration_minutes\":1,\"dependencies\":[]},{\"id\":\"4\",\"description\":\"Battre les œufs avec une fourchette jusqu'à obtenir un mélange homogène.\",\"duration_minutes\":1,\"dependencies\":[\"3\"]},{\"id\":\"5\",\"description\":\"Chauffer une poêle antiadhésive à feu moyen.\",\"duration_minutes\":2,\"dependencies\":[]},{\"{\" \n\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       ",
+      "start": "2025-11-20 10:33",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": []
+    }
+  ],
+  "resources": [],
+  "roles": []
+}

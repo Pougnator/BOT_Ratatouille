@@ -80,19 +80,25 @@ class LLMAgent:
             
     def propose_recipes(self, ingredients: list, servings: int = 2, additional_request: str = None) -> str:
         ingredients_str = ", ".join(ingredients)
-        system_prompt = """You are a helpful cooking assistant. Based on the ingredients provided, 
-        suggest 3 different recipes. For each recipe, provide:
-        1. Recipe name
+        system_prompt = """Tu es un chef de cuisine d'un grand restaurant excellent en cuisine et en recettes. À partir des ingrédients fournis, 
+        suggère 4 recettes différentes, delicieuses et qui donnent envie. N'hésites pas à utiliser les recettes de marmitton ou autres sites populaires de recettes. 
+        Pour chaque recette, indique :
+        1. Nom de la recette, comme si on était dans un restaurant étoilé, penses à un nom qui donne envie et qui est unique. Si c'est une recette d'un pays particulier, utilises le nom original de cette recette dans son pays d'origine.
+        Par exemple: au lieu de dire **Riz sauté aux œufs et tomates** tu vas dire **Fanqie Chao Fan - Riz sauté aux œufs et tomates**
         2. Brief description
         3. Difficulty level (Easy/Medium/Hard)
         The first recipe should use all of the ingredients provided. 
-        The other recipes could be gradually more flexible, but must be delicious and use at least some of the ingredients provided. 
-        The third recipe could also incorporate some additional but very common ingredients.
+        The other recipes could be gradually more flexible, but must be delicious and use at least some of the ingredients provided. They could also could also incorporate some additional but very common ingredients.
+        Also try to make sure that the reciepies you propose have some variety in terms of geographic origin, like french, italian, japanese, etc.  At least one of the recipes should be non european.
+        Try to think about what region in the country the recipe is from, because different regions also introduce variety in terms of ingredients and cooking techniques. You can tell a bit about the region in the description of the recipe.
         The recipes should be in French.
+        
         Format your response as a numbered list."""
         
+        long_term_memory = "You will exclude the following ingredients from the reciepe: meat, ognions. Also, I don't have an oven so you will exclude recipes that require an oven "
         user_prompt = f"I have these ingredients: {ingredients_str}. I'm cooking for {servings} people."
         
+        system_prompt += long_term_memory
         # Add any additional recipe request criteria
         if additional_request:
             user_prompt += f" {additional_request}"

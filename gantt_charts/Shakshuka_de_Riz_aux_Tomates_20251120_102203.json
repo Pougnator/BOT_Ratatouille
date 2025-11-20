@@ -1,0 +1,102 @@
+{
+  "tasks": [
+    {
+      "id": "1",
+      "name": "Laver les tomates sous l'eau courante.",
+      "start": "2025-11-20 10:22",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "2",
+      "name": "Couper les tomates en dés.",
+      "start": "2025-11-20 10:24",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "1"
+      ]
+    },
+    {
+      "id": "3",
+      "name": "Rincer le riz sous l'eau froide jusqu'à ce que l'eau soit claire.",
+      "start": "2025-11-20 10:29",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "4",
+      "name": "Chauffer de l'huile d'olive dans une poêle à feu moyen.",
+      "start": "2025-11-20 10:31",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "5",
+      "name": "Ajouter les dés de tomates dans la poêle et faire revenir pendant 5 minutes jusqu'à ce qu'elles soient tendres.",
+      "start": "2025-11-20 10:33",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "2",
+        "4"
+      ]
+    },
+    {
+      "id": "6",
+      "name": "Ajouter le riz dans la poêle avec les tomates et mélanger.",
+      "start": "2025-11-20 10:38",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "3",
+        "5"
+      ]
+    },
+    {
+      "id": "7",
+      "name": "Ajouter 200 ml d'eau dans la poêle et porter à ébullition.",
+      "start": "2025-11-20 10:40",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "6"
+      ]
+    },
+    {
+      "id": "8",
+      "name": "Réduire le feu, couvrir la poêle et laisser mijoter pendant 15 minutes jusqu'à ce que le riz soit cuit.",
+      "start": "2025-11-20 10:45",
+      "duration": 15,
+      "complete": 0,
+      "predecessors": [
+        "7"
+      ]
+    },
+    {
+      "id": "9",
+      "name": "Casser les œufs un par un sur le mélange de riz et tomates dans la poêle.",
+      "start": "2025-11-20 11:00",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "8"
+      ]
+    },
+    {
+      "id": "10",
+      "name": "Couvert la poêle et cuire à feu doux pendant 5 minutes jusqu'à ce que les œufs soient cuits à votre goût.",
+      "start": "2025-11-20 11:02",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "9"
+      ]
+    }
+  ],
+  "resources": [],
+  "roles": []
+}

@@ -1,0 +1,102 @@
+{
+  "tasks": [
+    {
+      "id": "1",
+      "name": "Laver les tomates sous l'eau froide.",
+      "start": "2025-11-20 10:07",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "2",
+      "name": "Couper le haut des tomates et les vider délicatement à l'aide d'une cuillère.",
+      "start": "2025-11-20 10:09",
+      "duration": 3,
+      "complete": 0,
+      "predecessors": [
+        "1"
+      ]
+    },
+    {
+      "id": "3",
+      "name": "Rincer le riz sous l'eau froide jusqu'à ce que l'eau soit claire.",
+      "start": "2025-11-20 10:12",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "4",
+      "name": "Faire cuire le riz dans une casserole d'eau bouillante salée pendant 10 minutes.",
+      "start": "2025-11-20 10:14",
+      "duration": 10,
+      "complete": 0,
+      "predecessors": [
+        "3"
+      ]
+    },
+    {
+      "id": "5",
+      "name": "Égoutter le riz et le laisser refroidir légèrement.",
+      "start": "2025-11-20 10:24",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "4"
+      ]
+    },
+    {
+      "id": "6",
+      "name": "Dans un saladier, mélanger le riz cuit, l'huile d'olive, le sel, le poivre et les herbes de Provence.",
+      "start": "2025-11-20 10:26",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "5"
+      ]
+    },
+    {
+      "id": "7",
+      "name": "Farcir les tomates avec le mélange de riz préparé.",
+      "start": "2025-11-20 10:31",
+      "duration": 3,
+      "complete": 0,
+      "predecessors": [
+        "2",
+        "6"
+      ]
+    },
+    {
+      "id": "8",
+      "name": "Préchauffer le four à 180°C (thermostat 6).",
+      "start": "2025-11-20 10:34",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "9",
+      "name": "Placer les tomates farcies dans un plat allant au four.",
+      "start": "2025-11-20 10:39",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "7"
+      ]
+    },
+    {
+      "id": "10",
+      "name": "Enfourner les tomates farcies pendant 20 minutes.",
+      "start": "2025-11-20 10:41",
+      "duration": 20,
+      "complete": 0,
+      "predecessors": [
+        "8",
+        "9"
+      ]
+    }
+  ],
+  "resources": [],
+  "roles": []
+}

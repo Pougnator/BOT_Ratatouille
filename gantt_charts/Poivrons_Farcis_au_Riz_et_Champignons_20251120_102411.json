@@ -1,0 +1,138 @@
+{
+  "tasks": [
+    {
+      "id": "1",
+      "name": "Laver les poivrons sous l'eau froide",
+      "start": "2025-11-20 10:24",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "2",
+      "name": "Couper les poivrons en deux et épépiner chaque moitié",
+      "start": "2025-11-20 10:26",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "1"
+      ]
+    },
+    {
+      "id": "3",
+      "name": "Rincer le riz sous l'eau froide jusqu'à ce que l'eau soit claire",
+      "start": "2025-11-20 10:31",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "4",
+      "name": "Chauffer une petite casserole d'eau salée à ébullition",
+      "start": "2025-11-20 10:33",
+      "duration": 3,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "5",
+      "name": "Ajouter le riz dans l'eau bouillante et cuire pendant 10 minutes",
+      "start": "2025-11-20 10:36",
+      "duration": 10,
+      "complete": 0,
+      "predecessors": [
+        "3",
+        "4"
+      ]
+    },
+    {
+      "id": "6",
+      "name": "Laver les champignons sous l'eau froide",
+      "start": "2025-11-20 10:46",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "7",
+      "name": "Couper les champignons en petits dés",
+      "start": "2025-11-20 10:48",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "6"
+      ]
+    },
+    {
+      "id": "8",
+      "name": "Dans une poêle, chauffer un peu d'huile d'olive à feu moyen",
+      "start": "2025-11-20 10:53",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "9",
+      "name": "Ajouter les champignons dans la poêle et faire sauter pendant 5 minutes jusqu'à ce qu'ils soient dorés",
+      "start": "2025-11-20 10:55",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "7",
+        "8"
+      ]
+    },
+    {
+      "id": "10",
+      "name": "Ajouter le riz cuit dans la poêle avec les champignons et bien mélanger",
+      "start": "2025-11-20 11:00",
+      "duration": 4,
+      "complete": 0,
+      "predecessors": [
+        "5",
+        "9"
+      ]
+    },
+    {
+      "id": "11",
+      "name": "Battre les œufs dans un bol",
+      "start": "2025-11-20 11:04",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "12",
+      "name": "Incorporer les œufs battus au mélange de riz et champignons, et cuire jusqu'à ce que les œufs soient cuits, environ 3 minutes",
+      "start": "2025-11-20 11:06",
+      "duration": 3,
+      "complete": 0,
+      "predecessors": [
+        "10",
+        "11"
+      ]
+    },
+    {
+      "id": "13",
+      "name": "Remplir chaque moitié de poivron avec le mélange de riz et champignons",
+      "start": "2025-11-20 11:09",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "12"
+      ]
+    },
+    {
+      "id": "14",
+      "name": "Placer les poivrons farcis dans la poêle et cuire à feu doux pendant 10 minutes pour bien réchauffer les poivrons",
+      "start": "2025-11-20 11:14",
+      "duration": 10,
+      "complete": 0,
+      "predecessors": [
+        "13"
+      ]
+    }
+  ],
+  "resources": [],
+  "roles": []
+}

@@ -65,7 +65,7 @@ class CookingAssistant:
         
     def collect_ingredients(self):
         self.console.print("[bold yellow]Quels ingrédients avez-vous sous la main?[/bold yellow]")
-        self.console.print("Entrez les ingrédients séparés par des virgules (par exemple, poulet, riz, tomates)")
+        self.console.print("Entrez les ingrédients séparés par des virgules (par exemple: oeufs, riz, tomates)")
         
         ingredients_input = Prompt.ask("Vos ingrédients")
         ingredients = [ing.strip() for ing in ingredients_input.split(',') if ing.strip()]
@@ -117,7 +117,7 @@ class CookingAssistant:
         
     def confirm_recipe(self):
         self.console.print("\n[bold yellow]Quel recette voulez-vous cuisiner?[/bold yellow]")
-        self.console.print("Entrez le numéro de la recette (1-3) ou le nom de la recette:")
+        self.console.print("Entrez le numéro de la recette (1-4) ou le nom de la recette:")
         self.console.print("Entrez 0 + instructions additionnelles pour demander plus de recettes")
         
         choice = Prompt.ask("Votre choix")
@@ -222,14 +222,35 @@ class CookingAssistant:
             # Store the detailed steps for Gantt chart
             self.state_machine.detailed_steps = steps_data
             
-            # Générer le diagramme de Gantt
-            gantt_data = self._generate_gantt_chart(steps_data)
-            gantt_file = self._save_gantt_chart(gantt_data, recipe_data.get("title", recipe_name))
+            # Générer le diagramme de Gantt (uniquement à partir des descriptions d'étapes)
+            # Éviter de passer l'objet recipe_data complet qui peut corrompre le JSON
+            steps_for_gantt = []
+            for i, step in enumerate(steps_data):
+                if isinstance(step, dict):
+                    # Créer une copie simplifiée de l'étape pour éviter la corruption
+                    steps_for_gantt.append({
+                        "id": step.get("id", str(i+1)),
+                        "description": step.get("description", ""),
+                        "duration_minutes": step.get("duration_minutes", 5),
+                        "dependencies": step.get("dependencies", [])
+                    })
+                else:
+                    # Pour les étapes en chaîne de caractères
+                    steps_for_gantt.append({
+                        "id": str(i+1),
+                        "description": str(step),
+                        "duration_minutes": 5,
+                        "dependencies": []
+                    })
+            
+            gantt_data = self._generate_gantt_chart(steps_for_gantt)
+            recipe_title = recipe_data.get("title", recipe_name)
+            gantt_file = self._save_gantt_chart(gantt_data, recipe_title)
             
             # Créer la visualisation Plotly interactive
             result = self.gantt_visualizer.process_gantt_file(
                 gantt_file,
-                recipe_name=recipe_data.get("title", recipe_name)
+                recipe_name=recipe_title
             )
             
             self.console.print(Panel(
@@ -469,40 +490,31 @@ class CookingAssistant:
         
         # Pour chaque étape, créer une tâche Gantt
         for i, step in enumerate(steps_data):
-            # Gérer les étapes qui pourraient être des chaînes de caractères plutôt que des objets
-            if isinstance(step, str):
-                task = {
-                    "id": f"task{i+1}",
-                    "name": step,
-                    "start": start_time.strftime("%Y-%m-%d %H:%M"),
-                    "duration": 5, # durée par défaut de 5 minutes
-                    "complete": 0,
-                    "predecessors": []
-                }
+            # Extraire les informations nécessaires en s'assurant que les données sont valides
+            step_id = str(step.get("id", f"task{i+1}")) if isinstance(step, dict) else f"task{i+1}"
+            
+            # S'assurer que le nom de la tâche est une chaîne courte (pas un objet JSON complet)
+            if isinstance(step, dict):
+                step_name = str(step.get("description", f"Étape {i+1}"))
             else:
-                # Obtenir la durée ou utiliser une valeur par défaut
+                step_name = str(step)[:100]  # Limiter la longueur à 100 caractères
+                
+            # Tâche standardisée
+            task = {
+                "id": step_id,
+                "name": step_name,
+                "start": start_time.strftime("%Y-%m-%d %H:%M"),
+                "duration": step.get("duration_minutes", 5) if isinstance(step, dict) else 5,
+                "complete": 0,
+                "predecessors": step.get("dependencies", []) if isinstance(step, dict) else []
+            }
+            # Avancer l'heure de début pour la prochaine tâche
+            if isinstance(step, dict):
                 duration = step.get("duration_minutes", 5)
+            else:
+                duration = 5
                 
-                # Obtenir la description ou utiliser une chaîne vide
-                name = step.get("description", f"Étape {i+1}")
-                
-                # Obtenir l'ID ou en générer un
-                task_id = step.get("id", f"task{i+1}")
-                
-                # Obtenir les dépendances
-                dependencies = step.get("dependencies", [])
-                
-                task = {
-                    "id": task_id,
-                    "name": name,
-                    "start": start_time.strftime("%Y-%m-%d %H:%M"),
-                    "duration": duration,
-                    "complete": 0,
-                    "predecessors": dependencies
-                }
-                
-                # Avancer l'heure de début pour la prochaine tâche
-                start_time = start_time + timedelta(minutes=duration)
+            start_time = start_time + timedelta(minutes=duration)
             
             gantt_data["tasks"].append(task)
         

@@ -1,0 +1,140 @@
+{
+  "tasks": [
+    {
+      "id": "1",
+      "name": "Laver les tomates sous l'eau froide pour enlever les impuretés.",
+      "start": "2025-11-20 10:31",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "2",
+      "name": "Couper les tomates en dés.",
+      "start": "2025-11-20 10:33",
+      "duration": 3,
+      "complete": 0,
+      "predecessors": [
+        "1"
+      ]
+    },
+    {
+      "id": "3",
+      "name": "Rincer le riz à l'eau claire jusqu'à ce que l'eau soit transparente.",
+      "start": "2025-11-20 10:36",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "4",
+      "name": "Faire chauffer 400 ml d'eau dans une casserole.",
+      "start": "2025-11-20 10:38",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "5",
+      "name": "Ajouter le riz à l'eau bouillante.",
+      "start": "2025-11-20 10:43",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": [
+        "3",
+        "4"
+      ]
+    },
+    {
+      "id": "6",
+      "name": "Réduire le feu et cuire le riz à couvert pendant 15 minutes, jusqu'à ce qu'il soit tendre.",
+      "start": "2025-11-20 10:44",
+      "duration": 15,
+      "complete": 0,
+      "predecessors": [
+        "5"
+      ]
+    },
+    {
+      "id": "7",
+      "name": "Casser les œufs dans un bol et les battre avec une fourchette jusqu'à obtenir un mélange homogène.",
+      "start": "2025-11-20 10:59",
+      "duration": 3,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "8",
+      "name": "Chauffer une poêle à feu moyen et ajouter un peu d'huile d'olive.",
+      "start": "2025-11-20 11:02",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "9",
+      "name": "Verser les œufs battus dans la poêle chaude.",
+      "start": "2025-11-20 11:04",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": [
+        "7",
+        "8"
+      ]
+    },
+    {
+      "id": "10",
+      "name": "Cuire les œufs en remuant doucement jusqu'à ce qu'ils soient brouillés et légèrement crémeux, environ 3 minutes.",
+      "start": "2025-11-20 11:05",
+      "duration": 3,
+      "complete": 0,
+      "predecessors": [
+        "9"
+      ]
+    },
+    {
+      "id": "11",
+      "name": "Ajouter les dés de tomates dans la poêle avec les œufs brouillés et mélanger délicatement.",
+      "start": "2025-11-20 11:08",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "2",
+        "10"
+      ]
+    },
+    {
+      "id": "12",
+      "name": "Incorporer le riz cuit dans la poêle avec les œufs et les tomates.",
+      "start": "2025-11-20 11:10",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "6",
+        "11"
+      ]
+    },
+    {
+      "id": "13",
+      "name": "Assaisonner avec du sel et du poivre selon votre goût.",
+      "start": "2025-11-20 11:12",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": [
+        "12"
+      ]
+    },
+    {
+      "id": "14",
+      "name": "Servir chaud dans des assiettes.",
+      "start": "2025-11-20 11:13",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "13"
+      ]
+    }
+  ],
+  "resources": [],
+  "roles": []
+}
