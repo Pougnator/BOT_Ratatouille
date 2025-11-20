@@ -1,0 +1,151 @@
+{
+  "tasks": [
+    {
+      "id": "1",
+      "name": "Laver les lentilles sous l'eau froide.",
+      "start": "2025-11-20 09:43",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "2",
+      "name": "Cuire les lentilles dans de l'eau bouillante pendant environ 20 minutes jusqu'à ce qu'elles soient tendres.",
+      "start": "2025-11-20 09:44",
+      "duration": 20,
+      "complete": 0,
+      "predecessors": [
+        "1"
+      ]
+    },
+    {
+      "id": "3",
+      "name": "Éplucher les carottes.",
+      "start": "2025-11-20 10:04",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "4",
+      "name": "Couper les carottes en dés.",
+      "start": "2025-11-20 10:06",
+      "duration": 3,
+      "complete": 0,
+      "predecessors": [
+        "3"
+      ]
+    },
+    {
+      "id": "5",
+      "name": "Nettoyer les champignons avec un chiffon humide.",
+      "start": "2025-11-20 10:09",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "6",
+      "name": "Trancher les champignons.",
+      "start": "2025-11-20 10:11",
+      "duration": 3,
+      "complete": 0,
+      "predecessors": [
+        "5"
+      ]
+    },
+    {
+      "id": "7",
+      "name": "Chauffer l'huile d'olive dans une grande poêle à feu moyen.",
+      "start": "2025-11-20 10:14",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "8",
+      "name": "Ajouter l'oignon émincé dans la poêle et le faire revenir jusqu'à ce qu'il soit translucide, environ 3 minutes.",
+      "start": "2025-11-20 10:16",
+      "duration": 3,
+      "complete": 0,
+      "predecessors": [
+        "7"
+      ]
+    },
+    {
+      "id": "9",
+      "name": "Ajouter les carottes en dés dans la poêle et les faire sauter pendant 5 minutes.",
+      "start": "2025-11-20 10:19",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "4",
+        "8"
+      ]
+    },
+    {
+      "id": "10",
+      "name": "Ajouter les champignons tranchés dans la poêle et les faire cuire jusqu'à ce qu'ils soient tendres, environ 5 minutes.",
+      "start": "2025-11-20 10:24",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "6",
+        "9"
+      ]
+    },
+    {
+      "id": "11",
+      "name": "Incorporer les lentilles cuites dans la poêle avec les légumes.",
+      "start": "2025-11-20 10:29",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "2",
+        "10"
+      ]
+    },
+    {
+      "id": "12",
+      "name": "Ajouter le bouillon de légumes dans la poêle et porter à ébullition.",
+      "start": "2025-11-20 10:31",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "11"
+      ]
+    },
+    {
+      "id": "13",
+      "name": "Réduire le feu et laisser mijoter pendant 10 minutes, en remuant de temps en temps.",
+      "start": "2025-11-20 10:36",
+      "duration": 10,
+      "complete": 0,
+      "predecessors": [
+        "12"
+      ]
+    },
+    {
+      "id": "14",
+      "name": "Incorporer le parmesan râpé, assaisonner avec du sel et du poivre selon votre goût.",
+      "start": "2025-11-20 10:46",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "13"
+      ]
+    },
+    {
+      "id": "15",
+      "name": "Servir chaud dans des assiettes creuses.",
+      "start": "2025-11-20 10:48",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "14"
+      ]
+    }
+  ],
+  "resources": [],
+  "roles": []
+}

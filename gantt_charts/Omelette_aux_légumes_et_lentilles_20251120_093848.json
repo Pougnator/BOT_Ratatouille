@@ -1,0 +1,150 @@
+{
+  "tasks": [
+    {
+      "id": "1",
+      "name": "Laver les tomates",
+      "start": "2025-11-20 09:38",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "2",
+      "name": "Couper les tomates en dés",
+      "start": "2025-11-20 09:40",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "1"
+      ]
+    },
+    {
+      "id": "3",
+      "name": "Laver le poivron",
+      "start": "2025-11-20 09:42",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "4",
+      "name": "Couper le poivron en dés",
+      "start": "2025-11-20 09:43",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "3"
+      ]
+    },
+    {
+      "id": "5",
+      "name": "Laver les champignons",
+      "start": "2025-11-20 09:45",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "6",
+      "name": "Couper les champignons en tranches",
+      "start": "2025-11-20 09:47",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "5"
+      ]
+    },
+    {
+      "id": "7",
+      "name": "Casser les oeufs dans un bol",
+      "start": "2025-11-20 09:49",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "8",
+      "name": "Battre les oeufs avec une fourchette",
+      "start": "2025-11-20 09:50",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": [
+        "7"
+      ]
+    },
+    {
+      "id": "9",
+      "name": "Chauffer une poêle à feu moyen et ajouter un peu d'huile",
+      "start": "2025-11-20 09:51",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "10",
+      "name": "Ajouter les tomates en dés dans la poêle chaude",
+      "start": "2025-11-20 09:53",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "2",
+        "9"
+      ]
+    },
+    {
+      "id": "11",
+      "name": "Ajouter le poivron en dés dans la poêle avec les tomates",
+      "start": "2025-11-20 09:55",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "4",
+        "10"
+      ]
+    },
+    {
+      "id": "12",
+      "name": "Ajouter les champignons dans la poêle",
+      "start": "2025-11-20 09:57",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "6",
+        "11"
+      ]
+    },
+    {
+      "id": "13",
+      "name": "Ajouter les lentilles cuites dans la poêle",
+      "start": "2025-11-20 09:59",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "12"
+      ]
+    },
+    {
+      "id": "14",
+      "name": "Verser les oeufs battus dans la poêle",
+      "start": "2025-11-20 10:01",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "8",
+        "13"
+      ]
+    },
+    {
+      "id": "15",
+      "name": "Cuire l'omelette jusqu'à ce qu'elle soit bien prise",
+      "start": "2025-11-20 10:03",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "14"
+      ]
+    }
+  ],
+  "resources": [],
+  "roles": []
+}

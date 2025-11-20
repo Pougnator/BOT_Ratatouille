@@ -1,0 +1,111 @@
+{
+  "tasks": [
+    {
+      "id": "1",
+      "name": "Laver les tomates sous l'eau froide.",
+      "start": "2025-11-20 09:52",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "2",
+      "name": "Couper les tomates en dés.",
+      "start": "2025-11-20 09:54",
+      "duration": 3,
+      "complete": 0,
+      "predecessors": [
+        "1"
+      ]
+    },
+    {
+      "id": "3",
+      "name": "Couper le poulet en petits dés.",
+      "start": "2025-11-20 09:57",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "4",
+      "name": "Dans une poêle, chauffer un peu d'huile à feu moyen.",
+      "start": "2025-11-20 10:02",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "5",
+      "name": "Ajouter les dés de poulet dans la poêle chaude.",
+      "start": "2025-11-20 10:04",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "3",
+        "4"
+      ]
+    },
+    {
+      "id": "6",
+      "name": "Faire revenir le poulet jusqu'à ce qu'il soit doré et cuit, environ 5 minutes.",
+      "start": "2025-11-20 10:09",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "5"
+      ]
+    },
+    {
+      "id": "7",
+      "name": "Dans un bol, casser les œufs et les battre avec une fourchette.",
+      "start": "2025-11-20 10:14",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "8",
+      "name": "Ajouter les dés de tomates au poulet dans la poêle et mélanger.",
+      "start": "2025-11-20 10:16",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "2",
+        "6"
+      ]
+    },
+    {
+      "id": "9",
+      "name": "Verser les œufs battus dans la poêle avec le poulet et les tomates.",
+      "start": "2025-11-20 10:18",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": [
+        "7",
+        "8"
+      ]
+    },
+    {
+      "id": "10",
+      "name": "Cuire l'omelette à feu doux jusqu'à ce qu'elle soit prise, environ 3 à 4 minutes.",
+      "start": "2025-11-20 10:19",
+      "duration": 4,
+      "complete": 0,
+      "predecessors": [
+        "9"
+      ]
+    },
+    {
+      "id": "11",
+      "name": "Servir l'omelette chaude, éventuellement accompagnée de pain.",
+      "start": "2025-11-20 10:23",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": [
+        "10"
+      ]
+    }
+  ],
+  "resources": [],
+  "roles": []
+}
