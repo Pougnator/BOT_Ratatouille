@@ -1,0 +1,103 @@
+{
+  "tasks": [
+    {
+      "id": "1",
+      "name": "Éplucher les patates douces.",
+      "start": "2025-11-20 13:45",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "2",
+      "name": "Couper les patates douces en dés.",
+      "start": "2025-11-20 13:50",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "1"
+      ]
+    },
+    {
+      "id": "3",
+      "name": "Chauffer l'huile d'olive dans une casserole à feu moyen.",
+      "start": "2025-11-20 13:55",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "4",
+      "name": "Ajouter les dés de patates douces dans la casserole.",
+      "start": "2025-11-20 13:57",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "2",
+        "3"
+      ]
+    },
+    {
+      "id": "5",
+      "name": "Assaisonner avec le sel et le poivre.",
+      "start": "2025-11-20 13:59",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": [
+        "4"
+      ]
+    },
+    {
+      "id": "6",
+      "name": "Verser le bouillon de légumes sur les patates douces.",
+      "start": "2025-11-20 14:00",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "5"
+      ]
+    },
+    {
+      "id": "7",
+      "name": "Porter le mélange à ébullition.",
+      "start": "2025-11-20 14:02",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "6"
+      ]
+    },
+    {
+      "id": "8",
+      "name": "Réduire le feu et laisser mijoter pendant 15 minutes jusqu'à ce que les patates douces soient tendres.",
+      "start": "2025-11-20 14:07",
+      "duration": 15,
+      "complete": 0,
+      "predecessors": [
+        "7"
+      ]
+    },
+    {
+      "id": "9",
+      "name": "Mixer le tout avec un mixeur plongeant jusqu'à obtenir une texture lisse.",
+      "start": "2025-11-20 14:22",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "8"
+      ]
+    },
+    {
+      "id": "10",
+      "name": "Incorporer le comté râpé dans le velouté et remuer jusqu'à ce qu'il soit fondu.",
+      "start": "2025-11-20 14:27",
+      "duration": 3,
+      "complete": 0,
+      "predecessors": [
+        "9"
+      ]
+    }
+  ],
+  "resources": [],
+  "roles": []
+}

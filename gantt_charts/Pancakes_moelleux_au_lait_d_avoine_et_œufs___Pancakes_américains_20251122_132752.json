@@ -1,0 +1,123 @@
+{
+  "tasks": [
+    {
+      "id": "1",
+      "name": "Casser les œufs dans un bol.",
+      "start": "2025-11-22 13:27",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "2",
+      "name": "Battre les œufs avec un fouet jusqu'à ce qu'ils soient légèrement mousseux.",
+      "start": "2025-11-22 13:28",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "1"
+      ]
+    },
+    {
+      "id": "3",
+      "name": "Ajouter le lait d'avoine aux œufs battus.",
+      "start": "2025-11-22 13:30",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": [
+        "2"
+      ]
+    },
+    {
+      "id": "4",
+      "name": "Mélanger doucement le lait d'avoine avec les œufs jusqu'à obtenir un mélange homogène.",
+      "start": "2025-11-22 13:31",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": [
+        "3"
+      ]
+    },
+    {
+      "id": "5",
+      "name": "Tamiser la farine dans un autre bol.",
+      "start": "2025-11-22 13:32",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "6",
+      "name": "Incorporer progressivement le mélange liquide (œufs et lait d'avoine) à la farine tamisée.",
+      "start": "2025-11-22 13:33",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "4",
+        "5"
+      ]
+    },
+    {
+      "id": "7",
+      "name": "Mélanger jusqu'à obtenir une pâte lisse et sans grumeaux.",
+      "start": "2025-11-22 13:35",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "6"
+      ]
+    },
+    {
+      "id": "8",
+      "name": "Chauffer une poêle antiadhésive à feu moyen.",
+      "start": "2025-11-22 13:37",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "9",
+      "name": "Verser une petite louche de pâte dans la poêle chaude.",
+      "start": "2025-11-22 13:39",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": [
+        "7",
+        "8"
+      ]
+    },
+    {
+      "id": "10",
+      "name": "Cuire jusqu'à ce que des bulles se forment à la surface du pancake, puis retourner.",
+      "start": "2025-11-22 13:40",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "9"
+      ]
+    },
+    {
+      "id": "11",
+      "name": "Cuire l'autre côté jusqu'à ce qu'il soit doré, puis retirer du feu.",
+      "start": "2025-11-22 13:42",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "10"
+      ]
+    },
+    {
+      "id": "12",
+      "name": "Répéter les étapes 9 à 11 jusqu'à épuisement de la pâte.",
+      "start": "2025-11-22 13:44",
+      "duration": 10,
+      "complete": 0,
+      "predecessors": [
+        "7",
+        "8"
+      ]
+    }
+  ],
+  "resources": [],
+  "roles": []
+}

@@ -1,0 +1,110 @@
+{
+  "tasks": [
+    {
+      "id": "1",
+      "name": "Éplucher la carotte.",
+      "start": "2025-11-20 12:57",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "2",
+      "name": "Couper la carotte en julienne.",
+      "start": "2025-11-20 12:59",
+      "duration": 3,
+      "complete": 0,
+      "predecessors": [
+        "1"
+      ]
+    },
+    {
+      "id": "3",
+      "name": "Laver les champignons à l'eau claire.",
+      "start": "2025-11-20 13:02",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "4",
+      "name": "Trancher les champignons en lamelles.",
+      "start": "2025-11-20 13:04",
+      "duration": 3,
+      "complete": 0,
+      "predecessors": [
+        "3"
+      ]
+    },
+    {
+      "id": "5",
+      "name": "Cuire le boulgour dans de l'eau bouillante salée selon les indications du paquet.",
+      "start": "2025-11-20 13:07",
+      "duration": 10,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "6",
+      "name": "Chauffer un peu d'huile d'olive dans une poêle à feu moyen.",
+      "start": "2025-11-20 13:17",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "7",
+      "name": "Ajouter la carotte en julienne dans la poêle et faire revenir pendant 3 minutes.",
+      "start": "2025-11-20 13:19",
+      "duration": 3,
+      "complete": 0,
+      "predecessors": [
+        "2",
+        "6"
+      ]
+    },
+    {
+      "id": "8",
+      "name": "Ajouter les champignons tranchés dans la poêle avec les carottes et faire sauter pendant 5 minutes jusqu'à ce qu'ils soient tendres.",
+      "start": "2025-11-20 13:22",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "4",
+        "7"
+      ]
+    },
+    {
+      "id": "9",
+      "name": "Ajouter les haricots rouges égouttés dans la poêle et mélanger délicatement pendant 2 minutes pour les réchauffer.",
+      "start": "2025-11-20 13:27",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "8"
+      ]
+    },
+    {
+      "id": "10",
+      "name": "Chauffer les falafels dans une poêle à feu moyen pendant environ 5 minutes en les retournant pour qu'ils soient bien dorés.",
+      "start": "2025-11-20 13:29",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "11",
+      "name": "Servir le boulgour dans des assiettes, garnir avec le mélange de légumes sautés et les falafels dorés sur le dessus.",
+      "start": "2025-11-20 13:34",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "5",
+        "9",
+        "10"
+      ]
+    }
+  ],
+  "resources": [],
+  "roles": []
+}
