@@ -119,7 +119,12 @@ class GUICookingAssistant:
     def __init__(self, root):
         self.root = root
         self.root.title("r0[BOT]t@toui11e")
-        self.root.geometry("1200x800")
+        self.root.geometry("800x600")  # Adjusted for 800x600 display
+        
+        # Try to detect if we're on a small screen and go fullscreen if needed
+        if root.winfo_screenwidth() <= 800:
+            root.attributes('-fullscreen', True)
+            
         # You cannot set a ttk style for the Toplevel/root window itself; use configure for bg color.
         # For a "black style" look, set root bg to black here (other ttk widgets can get styled separately).
         self.root.configure(bg="black")
@@ -151,78 +156,89 @@ class GUICookingAssistant:
         self.display_welcome()
 
     def _setup_gui(self):
-        # Create main panes with PanedWindow
-        self.main_pane = ttk.PanedWindow(self.root, orient=tk.VERTICAL, style="Black.TPanedwindow")
-        self.main_pane.pack(fill="both", expand=True, padx=10, pady=10)
-
-        # Style for black paned window background
-        style = ttk.Style()
-        style.configure("Black.TPanedwindow", background="black")
+        # SIMPLEST APPROACH: Just use one PanedWindow with fixed sash position
         
-        # Top pane for console interface
-        self.top_pane = ttk.Frame(self.main_pane)
-        self.top_pane.configure(height=600)
+        # Go back to using tk.PanedWindow which has better direct position control
+        self.main_pane = tk.PanedWindow(self.root, orient=tk.VERTICAL, 
+                                       bg="black", sashwidth=4, sashrelief=tk.RAISED)
+        self.main_pane.pack(fill="both", expand=True, padx=5, pady=5)
         
-        # Bottom pane will be split horizontally
-        self.bottom_pane = ttk.PanedWindow(self.main_pane, orient=tk.HORIZONTAL)
+        # Create top frame for console
+        self.top_pane = tk.Frame(self.main_pane, bg="black")
         
-        # Add top pane to main pane
-        self.main_pane.add(self.top_pane, weight=2)
+        # Create bottom frame for ingredients and gantt
+        self.bottom_container = tk.Frame(self.main_pane, bg="black")
         
-        # Setup top pane contents (console)
+        # We'll add the frames with weights at the end of _setup_gui
+        
+        # Setup the console
         self._setup_console_pane()
         
-        # Setup bottom pane contents
+        # Create horizontal split for bottom section - switch back to ttk.PanedWindow which supports weight
+        self.bottom_pane = ttk.PanedWindow(self.bottom_container, orient=tk.HORIZONTAL)
+        self.bottom_pane.pack(fill="both", expand=True)
+        
+        # Setup ingredients and gantt areas
         self._setup_bottom_pane()
         
-        # Add bottom pane to main pane
-        self.main_pane.add(self.bottom_pane, weight=1)
+        # First add the panes without weights
+        self.main_pane.add(self.top_pane)
+        self.main_pane.add(self.bottom_container)
+        
+        # Then force the sash position after a small delay to ensure the window is fully created
+        def set_position():
+            # Get the window height
+            window_height = self.root.winfo_height()
+            if window_height > 100:  # Make sure window is properly sized
+                # Set the position at 60% of window height (as per your adjustment)
+                sash_pos = int(window_height * 0.7)
+                
+                # For tk.PanedWindow, use the correct method
+                self.main_pane.update()
+                self.main_pane.sash_place(0, 0, sash_pos)
+        
+        # Call after a delay
+        self.root.update()
+        self.root.after(200, set_position)  # Increased delay for better reliability
         
     def _setup_console_pane(self):
-        # Create styles for our components
-        style = ttk.Style()
-        style.configure("Black.TFrame", background="black")  
-        style.configure("Console.TEntry", fieldbackground="black", foreground="lime")
-        style.configure("Console.TLabel", background="black", foreground="lime")
-        style.configure("Console.TButton", background="black", foreground="lime")
-        print("Setting console...")
-        # Use standard tk Frame for direct control over appearance
-        self.console_section = tk.Frame(self.top_pane, bg="black")
-        self.console_section.pack(fill="both", expand=True, padx=5, pady=5)
+        # Simplest approach - direct setup without nested frames
         
-        # Explicitly set the layout with grid for better control
-        self.console_section.grid_columnconfigure(0, weight=1)  # Make column expandable
-        self.console_section.grid_rowconfigure(0, weight=1)     # Output area expands
-        self.console_section.grid_rowconfigure(1, weight=0)     # Input area fixed height
+        # Use a container frame for both output and input
+        self.console_container = tk.Frame(self.top_pane, bg="black")
+        self.console_container.pack(fill="both", expand=True)
         
-        # Console output area - styled like a terminal
+        # Set grid layout to ensure input is always visible
+        self.console_container.grid_rowconfigure(0, weight=1)  # Output expands
+        self.console_container.grid_rowconfigure(1, weight=0, minsize=40)  # Input has minimum height
+        self.console_container.grid_columnconfigure(0, weight=1)
+        
+        # Console output area - now in the container
         self.console_output = scrolledtext.ScrolledText(
-            self.console_section, 
+            self.console_container, 
             wrap=tk.WORD, 
-            font=("Consolas", 12),
+            font=("Consolas", 11),
             bg="black", 
             fg="lime",
-            insertbackground="green"  # cursor color
+            insertbackground="green"
         )
-        # Place in the first row (expands to fill available space)
-        self.console_output.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
+        
+        # Place in the first row with grid instead of pack
+        self.console_output.grid(row=0, column=0, sticky="nsew", padx=5, pady=(2, 2))
         self.console_output.config(state=tk.DISABLED)  # Start disabled
         
         # Setup stdout/stdin redirection
         self.console_redirector = ConsoleRedirector(self.console_output, self)
         
-        # Input area with bright border for high visibility
+        # Input area - now in the container with guaranteed space (no border)
         self.input_frame = tk.Frame(
-            self.console_section, 
+            self.console_container, 
             bg="black",
-            bd=3,  # Thicker border
-            # relief=tk.RIDGE,  # More prominent border style
-            # highlightbackground="yellow",  
-            # highlightcolor="yellow",
-            # highlightthickness=2
+            height=30  # Fixed height
         )
-        # Place in second row (fixed height)
-        self.input_frame.grid(row=1, column=0, sticky="ew", padx=5, pady=10)
+        # Place in second row with grid - this ensures it's always visible
+        self.input_frame.grid(row=1, column=0, sticky="ew", padx=5, pady=5)
+        self.input_frame.grid_propagate(False)  # Prevent shrinking
 
         # For improved layout control, use grid inside the input frame
         self.input_frame.grid_columnconfigure(1, weight=1)  # Entry expands
@@ -241,7 +257,7 @@ class GUICookingAssistant:
         self.input_indicator = tk.Label(
             self.input_frame,
             text="[Input required]",
-            font=("Consolas", 10),
+            font=("Consolas", 11),
             fg="lime",
             bg="black"
         )
@@ -250,7 +266,7 @@ class GUICookingAssistant:
         # Console input - use standard tk Entry for direct styling
         self.console_input = tk.Entry(
             self.input_frame, 
-            font=("Consolas", 12),
+            font=("Consolas", 11),
             bg="black",
             fg="lime",
             insertbackground="lime"  # Cursor color
@@ -283,7 +299,7 @@ class GUICookingAssistant:
         self.ingredients_frame = ttk.Frame(self.bottom_pane)
         
         ingredients_label = ttk.Label(self.ingredients_frame, text="Ingredients", font=("Helvetica", 12, "bold"))
-        ingredients_label.pack(padx=5, pady=5)
+        ingredients_label.pack(padx=5, pady=2)
         
         self.ingredients_box = tk.Text(self.ingredients_frame, width=30, font=("Courier", 14), bg="#f0f0f0")
         self.ingredients_box.pack(fill="both", expand=True, padx=5, pady=5)
@@ -298,7 +314,7 @@ class GUICookingAssistant:
         gantt_label.pack(padx=5, pady=5)
         
         self.gantt_box = tk.Text(self.gantt_frame, width=50, bg="black", fg="lime", font=("Courier", 12))
-        self.gantt_box.pack(fill="both", expand=True, padx=5, pady=5)
+        self.gantt_box.pack(fill="both", expand=True, padx=5, pady=2)
         self.gantt_box.insert(tk.END, "Gantt chart will appear here")
         self.gantt_box.config(state=tk.DISABLED)
         
