@@ -38,3 +38,7 @@ env/
 # OS
 .DS_Store
 Thumbs.db
+
+# Gantt charts
+gantt_charts/
+gantt_html/
