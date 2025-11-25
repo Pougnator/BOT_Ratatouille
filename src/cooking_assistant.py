@@ -33,10 +33,14 @@ class CookingAssistant:
         
     def display_welcome(self):
         welcome_text = """
-        Hello, je suis Robotatouille!
-        Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédients disponibles et vous guiderai étape par étape tout au long du processus de cuisine.
-        Commençons!
-        """
+Hello, je suis Robotatouille!
+
+Je vous aiderai à découvrir de délicieuses recettes basées 
+sur vos ingrédients disponibleset vous guiderai étape par étape 
+tout au long du processus de cuisine.
+
+Commençons!
+"""
         # self.console.print(Panel(welcome_text, title=  "Robotatouille"))
         self.console.print(welcome_text)
         
@@ -91,8 +95,8 @@ class CookingAssistant:
         # Clear the additional request after using it
         self.state_machine.clear_additional_recipe_request()
         
-        self.console.print(Panel(recipes_response, title="📖 Choix des recettes", border_style="blue"))
-        
+        # self.console.print(Panel(recipes_response, title="📖 Choix des recettes", border_style="blue"))
+        self.console.print(recipes_response)
         # Extraire seulement les véritables recettes (celles qui commencent par un numéro)
         import re
         
