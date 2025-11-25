@@ -1,0 +1,91 @@
+{
+  "tasks": [
+    {
+      "id": "1",
+      "name": "Laver le riz sous l'eau froide jusqu'à ce que l'eau soit claire.",
+      "start": "2025-11-25 17:33",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "2",
+      "name": "Éplucher les tomates et les couper en dés.",
+      "start": "2025-11-25 17:35",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "3",
+      "name": "Chauffer de l'eau dans une casserole à ébullition.",
+      "start": "2025-11-25 17:40",
+      "duration": 3,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "4",
+      "name": "Ajouter le riz dans l'eau bouillante et cuire pendant 15 minutes jusqu'à ce qu'il soit tendre.",
+      "start": "2025-11-25 17:43",
+      "duration": 15,
+      "complete": 0,
+      "predecessors": [
+        "1",
+        "3"
+      ]
+    },
+    {
+      "id": "5",
+      "name": "Dans une poêle, chauffer un peu d'huile d'olive à feu moyen.",
+      "start": "2025-11-25 17:58",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "6",
+      "name": "Ajouter les dés de tomates dans la poêle et les faire revenir pendant 5 minutes.",
+      "start": "2025-11-25 18:00",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "2",
+        "5"
+      ]
+    },
+    {
+      "id": "7",
+      "name": "Incorporer le riz cuit dans la poêle avec les tomates, mélanger délicatement.",
+      "start": "2025-11-25 18:05",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "4",
+        "6"
+      ]
+    },
+    {
+      "id": "8",
+      "name": "Faire des petits creux dans le mélange de riz et tomates, puis casser un œuf dans chaque creux.",
+      "start": "2025-11-25 18:07",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": [
+        "7"
+      ]
+    },
+    {
+      "id": "9",
+      "name": "Couvrir la poêle et cuire à feu doux jusqu'à ce que les blancs d'œufs soient cuits et les jaunes encore légèrement coulants, environ 5-7 minutes.",
+      "start": "2025-11-25 18:08",
+      "duration": 7,
+      "complete": 0,
+      "predecessors": [
+        "8"
+      ]
+    }
+  ],
+  "resources": [],
+  "roles": []
+}

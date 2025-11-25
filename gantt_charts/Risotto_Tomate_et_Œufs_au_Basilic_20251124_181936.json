@@ -1,0 +1,121 @@
+{
+  "tasks": [
+    {
+      "id": "1",
+      "name": "Laver les tomates sous l'eau froide.",
+      "start": "2025-11-24 18:19",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "2",
+      "name": "Couper les tomates en dés.",
+      "start": "2025-11-24 18:21",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "1"
+      ]
+    },
+    {
+      "id": "3",
+      "name": "Mesurer 150g de riz arborio.",
+      "start": "2025-11-24 18:26",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "4",
+      "name": "Chauffer 1 cuillère à soupe d'huile d'olive dans une grande poêle à feu moyen.",
+      "start": "2025-11-24 18:27",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "5",
+      "name": "Ajouter les dés de tomates dans la poêle et faire revenir pendant 5 minutes jusqu'à ce qu'elles commencent à ramollir.",
+      "start": "2025-11-24 18:29",
+      "duration": 5,
+      "complete": 0,
+      "predecessors": [
+        "2",
+        "4"
+      ]
+    },
+    {
+      "id": "6",
+      "name": "Ajouter le riz arborio dans la poêle et remuer pour bien enrober le riz avec l'huile et les tomates.",
+      "start": "2025-11-24 18:34",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "3",
+        "5"
+      ]
+    },
+    {
+      "id": "7",
+      "name": "Ajouter 400ml d'eau (ou bouillon de légumes) dans la poêle et porter à ébullition.",
+      "start": "2025-11-24 18:36",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "6"
+      ]
+    },
+    {
+      "id": "8",
+      "name": "Réduire le feu à moyen-doux et laisser mijoter pendant environ 18 minutes, en remuant régulièrement jusqu'à ce que le riz soit crémeux et al dente.",
+      "start": "2025-11-24 18:38",
+      "duration": 18,
+      "complete": 0,
+      "predecessors": [
+        "7"
+      ]
+    },
+    {
+      "id": "9",
+      "name": "Pendant que le risotto mijote, casser les 2 œufs dans un bol et les battre légèrement avec une fourchette.",
+      "start": "2025-11-24 18:56",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": []
+    },
+    {
+      "id": "10",
+      "name": "Ajouter les œufs battus au risotto en remuant rapidement pour les incorporer et les cuire légèrement.",
+      "start": "2025-11-24 18:57",
+      "duration": 2,
+      "complete": 0,
+      "predecessors": [
+        "8",
+        "9"
+      ]
+    },
+    {
+      "id": "11",
+      "name": "Assaisonner le risotto avec du sel et du poivre au goût.",
+      "start": "2025-11-24 18:59",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": [
+        "10"
+      ]
+    },
+    {
+      "id": "12",
+      "name": "Ajouter le basilic frais ciselé au risotto et mélanger délicatement.",
+      "start": "2025-11-24 19:00",
+      "duration": 1,
+      "complete": 0,
+      "predecessors": [
+        "11"
+      ]
+    }
+  ],
+  "resources": [],
+  "roles": []
+}

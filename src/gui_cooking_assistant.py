@@ -371,8 +371,27 @@ class GUICookingAssistant:
             
         self.print_to_console("\n Robotatouille is starting...\n")
         
-        # Create a new cooking assistant
-        self.cooking_assistant = CookingAssistant()
+        # Check for API key first (most common issue)
+        import os
+        if not os.getenv("OPENAI_API_KEY"):
+            try:
+                # Try to load from .env file directly
+                from dotenv import load_dotenv
+                load_dotenv()
+                if not os.getenv("OPENAI_API_KEY"):
+                    self.print_to_console("ERROR: OPENAI_API_KEY not found in environment or .env file!")
+                    self.print_to_console("Please create a .env file with your API key.")
+                    return
+            except ImportError:
+                self.print_to_console("ERROR: python-dotenv package not installed.")
+                self.print_to_console("Please run: pip install python-dotenv")
+                return
+            except Exception as env_error:
+                self.print_to_console(f"ERROR loading .env file: {str(env_error)}")
+                return
+        
+        # Debug message
+        self.print_to_console("API key found, initializing cooking assistant...")
         
         # Define thread function
         def run_assistant():
@@ -385,17 +404,40 @@ class GUICookingAssistant:
                 sys.stdout = self.console_redirector
                 sys.stdin = self.console_redirector
                 
+                # Use self.print_to_console via root.after for thread-safe updates to GUI
+                self.root.after(0, lambda: self.print_to_console("Creating cooking assistant..."))
+                
+                # Create the cooking assistant with specific error handling
+                try:
+                    self.cooking_assistant = CookingAssistant()
+                    self.root.after(0, lambda: self.print_to_console("Cooking assistant created successfully."))
+                except Exception as create_error:
+                    error_msg = f"ERROR creating cooking assistant: {str(create_error)}"
+                    self.root.after(0, lambda msg=error_msg: self.print_to_console(msg))
+                    return
+                
                 # Create and run event loop for the async cooking assistant
+                self.root.after(0, lambda: self.print_to_console("Starting event loop..."))
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
                 
                 try:
+                    self.root.after(0, lambda: self.print_to_console("Running cooking assistant..."))
                     loop.run_until_complete(self.cooking_assistant.run())
+                except Exception as run_error:
+                    error_msg = f"ERROR running cooking assistant: {str(run_error)}"
+                    self.root.after(0, lambda msg=error_msg: self.print_to_console(msg))
                 finally:
                     loop.close()
                     
             except Exception as e:
-                self.root.after(0, lambda: self.print_to_console(f"\nError: {str(e)}\n"))
+                # Make sure the error is displayed in the GUI console
+                error_msg = f"\nUnexpected error: {str(e)}\n"
+                self.root.after(0, lambda msg=error_msg: self.print_to_console(msg))
+                
+                import traceback
+                trace_msg = f"Stack trace: {traceback.format_exc()}"
+                self.root.after(0, lambda msg=trace_msg: self.print_to_console(msg))
             finally:
                 # Restore original stdout and stdin
                 sys.stdout = original_stdout
@@ -404,6 +446,9 @@ class GUICookingAssistant:
         # Start assistant thread
         self.assistant_thread = threading.Thread(target=run_assistant, daemon=True)
         self.assistant_thread.start()
+        
+        # Add additional message after starting thread
+        self.print_to_console("Thread started, initializing Robotatouille...")
     
     def print_to_console(self, text, end='\n'):
         """Add text to the console output"""
@@ -453,6 +498,22 @@ class GUICookingAssistant:
                 self.start_cooking_assistant()
             elif command.lower() == "ingredients":
                 self.update_ingredients("Sample ingredients:\n- Tomatoes\n- Onions\n- Garlic\n- Basil")
+            elif command.lower() == "debug":
+                # Show debugging information
+                import os
+                import sys
+                
+                debug_info = f"""
+DEBUGGING INFORMATION:
+---------------------
+Current Directory: {os.getcwd()}
+Python Version: {sys.version}
+Path: {sys.path}
+OPENAI_API_KEY exists: {"Yes" if os.getenv("OPENAI_API_KEY") else "No"}
+.env file exists: {"Yes" if os.path.exists(os.path.join(os.getcwd(), ".env")) else "No"}
+Assistant thread active: {"Yes" if self.assistant_thread and self.assistant_thread.is_alive() else "No"}
+"""
+                self.print_to_console(debug_info)
             else:
                 # Just echo back if no cooking assistant is running
                 if not self.assistant_thread or not self.assistant_thread.is_alive():
