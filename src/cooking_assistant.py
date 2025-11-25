@@ -37,7 +37,8 @@ class CookingAssistant:
         Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédients disponibles et vous guiderai étape par étape tout au long du processus de cuisine.
         Commençons!
         """
-        self.console.print(Panel(welcome_text, title=  "Robotatouille"))
+        # self.console.print(Panel(welcome_text, title=  "Robotatouille"))
+        self.console.print(welcome_text)
         
     def display_state(self):
         state_name = self.state_machine.current_state.value.replace('_', ' ').title()
