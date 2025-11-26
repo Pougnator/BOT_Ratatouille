@@ -205,10 +205,10 @@ class GUICookingAssistant(CookingUI):
         # Ingredients list (left)
         self.ingredients_frame = ttk.Frame(self.bottom_pane)
         
-        ingredients_label = ttk.Label(self.ingredients_frame, text="Ingredients", font=("Helvetica", 12, "bold"))
+        ingredients_label = ttk.Label(self.ingredients_frame, text="Ingredients", font=("Helvetica", 10, "bold"))
         ingredients_label.pack(padx=5, pady=2)
         
-        self.ingredients_box = tk.Text(self.ingredients_frame, width=30, font=("Courier", 14), bg="#f0f0f0")
+        self.ingredients_box = tk.Text(self.ingredients_frame, width=30, font=("Courier", 10), bg="black", fg = "white")
         self.ingredients_box.pack(fill="both", expand=True, padx=5, pady=5)
         self.ingredients_box.config(state=tk.DISABLED)
         
@@ -220,7 +220,7 @@ class GUICookingAssistant(CookingUI):
         gantt_label = ttk.Label(self.gantt_frame, text="Recipe Timeline", font=("Helvetica", 12, "bold"))
         gantt_label.pack(padx=5, pady=5)
         
-        self.gantt_box = tk.Text(self.gantt_frame, width=50, bg="black", fg="lime", font=("Courier", 12))
+        self.gantt_box = tk.Text(self.gantt_frame, width=50, bg="black", fg="lime", font=("Courier", 10))
         self.gantt_box.pack(fill="both", expand=True, padx=5, pady=2)
         self.gantt_box.insert(tk.END, "Gantt chart will appear here")
         self.gantt_box.config(state=tk.DISABLED)
@@ -406,7 +406,7 @@ class GUICookingAssistant(CookingUI):
     
     def show_ingredients(self, ingredients: List[Dict[str, str]]):
         """Display ingredients list"""
-        ingredients_text = "Ingrédients:\n\n"
+        ingredients_text = ""
         for ingredient in ingredients:
             quantity = ingredient.get("quantity", "")
             unit = ingredient.get("unit", "")
@@ -422,6 +422,7 @@ class GUICookingAssistant(CookingUI):
         self.set_ingredients(ingredients_text)
         
         # Also show in console
+        self.show_text("Ingrédients:\n\n")
         self.show_text(ingredients_text)
     
     def show_steps(self, steps: List[str], current_step: int = 0):
