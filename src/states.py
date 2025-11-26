@@ -47,14 +47,25 @@ class StateMachine:
         self.current_step = 0
         
     def next_step(self):
+
         if self.current_step < len(self.recipe_steps) - 1:
+            print(f"Moving to next step: {self.current_step}, total steps: {len(self.recipe_steps)}")
             self.current_step += 1
             return True
+        print("No more steps to move to")
+        self.is_cooking_complete = True
+       
         return False
         
     def get_current_step(self) -> Optional[str]:
-        if 0 <= self.current_step < len(self.recipe_steps):
+        if 0 <= self.current_step < len(self.recipe_steps) -1:
+            print(f"Getting current step: {self.current_step}, total steps: {len(self.recipe_steps)}")
             return self.recipe_steps[self.current_step]
+        elif self.current_step == len(self.recipe_steps) - 1:
+            print("Last step reached")
+            self.is_cooking_complete = True
+            return None
+   
         return None
         
     def is_cooking_complete(self) -> bool:

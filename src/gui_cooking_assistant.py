@@ -1,3 +1,5 @@
+from cgi import print_directory
+from re import L
 import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox
 import json
@@ -8,114 +10,24 @@ import io
 import os
 import asyncio
 from datetime import datetime, timedelta
+from typing import List, Dict, Callable, Optional
 
 # Handle imports for both direct execution and package import
 if __name__ == "__main__":
     # When run directly, use absolute imports
+    print("Running GUI Cooking Assistant directly")
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from src.states import StateMachine, CookingState
     from src.cooking_assistant import CookingAssistant
+    from src.cooking_ui import CookingUI
 else:
     # When imported as part of the package, use relative imports
     from .states import StateMachine, CookingState
     from .cooking_assistant import CookingAssistant
+    from .cooking_ui import CookingUI
 
-class ConsoleRedirector:
-    """Redirects stdout and stdin to the GUI console"""
-    def __init__(self, text_widget, gui_app):
-        self.text_widget = text_widget
-        self.gui_app = gui_app
-        self.buffer = ""
-        self.line_buffer = ""
-        
-    def strip_ansi_codes(self, text):
-        """Remove ANSI color codes from text"""
-        import re
-        # This pattern matches ANSI escape codes like [32m, [0m, etc.
-        ansi_pattern = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
-        return ansi_pattern.sub('', text)
-        
-    def write(self, string):
-        """Write text to the console and process it for specific content types"""
-        self.buffer += string
-        
-        # Strip ANSI color codes before displaying
-        clean_string = self.strip_ansi_codes(string)
-        
-        # Add text to the console
-        self.text_widget.config(state=tk.NORMAL)
-        self.text_widget.insert(tk.END, clean_string)
-        self.text_widget.see(tk.END)
-        self.text_widget.config(state=tk.DISABLED)
-        
-        # Process the text to extract useful information
-        self.line_buffer += clean_string
-        
-        # Check if we've received a complete line
-        if '\n' in self.line_buffer:
-            lines = self.line_buffer.split('\n')
-            self.line_buffer = lines[-1]  # Keep the incomplete line
-            
-            # Process each complete line
-            for line in lines[:-1]:
-                self.process_line(line)
-        
-    def process_line(self, line):
-        """Process a line of output for specific content"""
-        # Check for ingredients section
-        if "Ingrédients:" in line or "Ingredients:" in line:
-            self.gui_app.collecting_ingredients = True
-            self.gui_app.ingredients_text = line + "\n"
-            return
-            
-        # # If we're collecting ingredients, add to the ingredients
-        # if self.gui_app.collecting_ingredients:
-        #     # Check if we've reached the end of ingredients section
-        #     if line.strip() == "" or "Étapes" in line or "Steps" in line:
-        #         self.gui_app.collecting_ingredients = False
-        #         # Update ingredients display
-        #         self.gui_app.root.after(0, lambda: self.gui_app.update_ingredients(self.gui_app.ingredients_text))
-        #     else:
-        #         self.gui_app.ingredients_text += line + "\n"
-                
-        # # Check for recipe steps
-        # if "Étapes de préparation" in line or "Preparation Steps" in line:
-        #     self.gui_app.collecting_steps = True
-        #     self.gui_app.steps_text = line + "\n"
-        #     return
-            
-        # If we're collecting steps, add to the steps
-        if self.gui_app.collecting_steps:
-            # Check if we've reached the end of steps section
-            if line.strip() == "" and self.gui_app.steps_text.count('\n') > 3:
-                self.gui_app.collecting_steps = False
-                # Create simple Gantt chart for steps
-                self.gui_app.root.after(0, lambda: self.gui_app.create_simple_gantt(self.gui_app.steps_text))
-            else:
-                self.gui_app.steps_text += line + "\n"
-        
-    def flush(self):
-        pass
-        
-    def readline(self):
-        """Read a line of input from the GUI"""
-        # Set visual cue that we're waiting for input
-        self.gui_app.root.after(0, self.gui_app.show_input_prompt)
-        self.gui_app.waiting_for_input = True
-        self.gui_app.input_ready.clear()
-        
-        # Wait for input_ready event to be set
-        while not self.gui_app.input_ready.is_set():
-            time.sleep(0.1)
-            
-        # Reset input state
-        self.gui_app.waiting_for_input = False
-        self.gui_app.root.after(0, self.gui_app.hide_input_prompt)
-        
-        input_text = self.gui_app.last_input + '\n'
-        return input_text
-
-class GUICookingAssistant:
+class GUICookingAssistant(CookingUI):
+    """GUI implementation of CookingUI interface"""
     def __init__(self, root):
         self.root = root
         self.root.title("r0[BOT]t@toui11e")
@@ -134,16 +46,10 @@ class GUICookingAssistant:
         self.command_history = []
         self.history_index = 0
         
-        # Input handling for redirecting to cooking assistant
-        self.waiting_for_input = False
-        self.input_ready = threading.Event()
-        self.last_input = ""
-        
-        # Content tracking
-        self.collecting_ingredients = False
-        self.ingredients_text = "Text will be added here"
-        self.collecting_steps = False
-        self.steps_text = "Some text will be added here for steps"
+        # Input handling - callback-based instead of event-based
+        self.current_prompt = None
+        self.current_callback = None
+        self.current_default = None
         
         # Cooking assistant
         self.cooking_assistant = None
@@ -154,6 +60,7 @@ class GUICookingAssistant:
         
         # Show welcome message
         self.display_welcome()
+        self.start_cooking_assistant()
 
     def _setup_gui(self):
         # SIMPLEST APPROACH: Just use one PanedWindow with fixed sash position
@@ -227,8 +134,8 @@ class GUICookingAssistant:
         self.console_output.grid(row=0, column=0, sticky="nsew", padx=5, pady=(2, 2))
         self.console_output.config(state=tk.DISABLED)  # Start disabled
         
-        # Setup stdout/stdin redirection
-        self.console_redirector = ConsoleRedirector(self.console_output, self)
+        # # Setup stdout/stdin redirection
+        # self.console_redirector = ConsoleRedirector(self.console_output, self)
         
         # Input area - now in the container with guaranteed space (no border)
         self.input_frame = tk.Frame(
@@ -330,6 +237,21 @@ class GUICookingAssistant:
         """Exit the application"""
         if messagebox.askyesno("Quit", "Are you sure you want to quit?"):
             self.root.quit()
+
+        
+    def next_step(self):
+        """Move to the next step"""
+        # In the new architecture, the state machine lives inside CookingAssistant.
+        # This method is a convenience hook if you later add a GUI button for "next step".
+        if not self.cooking_assistant:
+            self.show_text("Assistant is not running yet.\n")
+            return
+
+        # Advance the state machine and refresh the displayed steps
+        self.cooking_assistant.state_machine.next_step()
+        self.cooking_assistant.display_cooking_steps()
+        print("Moving to next step...\n")
+        
             
     def update_ingredients(self, ingredients_text):
         """Update the ingredients panel with provided text"""
@@ -361,15 +283,15 @@ class GUICookingAssistant:
    |||     Type 'start' or get lost      |||
    =========================================
 """
-        self.print_to_console(welcome_message)
+        print(welcome_message)
         
     def start_cooking_assistant(self):
         """Start the cooking assistant in a separate thread"""
         if self.assistant_thread and self.assistant_thread.is_alive():
-            self.print_to_console("Cooking assistant is already running!")
+            print("Cooking assistant is already running!\n")
             return
             
-        self.print_to_console("\n Robotatouille is starting...\n")
+        print("\n Robotatouille is starting...\n")
         
         # Check for API key first (most common issue)
         import os
@@ -379,83 +301,155 @@ class GUICookingAssistant:
                 from dotenv import load_dotenv
                 load_dotenv()
                 if not os.getenv("OPENAI_API_KEY"):
-                    self.print_to_console("ERROR: OPENAI_API_KEY not found in environment or .env file!")
-                    self.print_to_console("Please create a .env file with your API key.")
+                    print("OPENAI_API_KEY not found in environment or .env file!")
+                    print("Please create a .env file with your API key.\n")
                     return
             except ImportError:
-                self.print_to_console("ERROR: python-dotenv package not installed.")
-                self.print_to_console("Please run: pip install python-dotenv")
+                print("python-dotenv package not installed.")
+                print("Please run: pip install python-dotenv\n")
                 return
             except Exception as env_error:
-                self.print_to_console(f"ERROR loading .env file: {str(env_error)}")
+                print(f"Loading .env file: {str(env_error)}")
                 return
         
         # Debug message
-        self.print_to_console("API key found, initializing cooking assistant...")
+        print("API key found, initializing cooking assistant...\n")
         
         # Define thread function
         def run_assistant():
-            # Save original stdout and stdin
-            original_stdout = sys.stdout
-            original_stdin = sys.stdin
-            
             try:
-                # Redirect stdout and stdin
-                sys.stdout = self.console_redirector
-                sys.stdin = self.console_redirector
+                self.root.after(0, lambda: print("Creating cooking assistant...\n"))
                 
-                # Use self.print_to_console via root.after for thread-safe updates to GUI
-                self.root.after(0, lambda: self.print_to_console("Creating cooking assistant..."))
-                
-                # Create the cooking assistant with specific error handling
+                # Create the cooking assistant with self as the UI
                 try:
-                    self.cooking_assistant = CookingAssistant()
-                    self.root.after(0, lambda: self.print_to_console("Cooking assistant created successfully."))
+                    self.cooking_assistant = CookingAssistant(ui=self)
+                    self.root.after(0, lambda: print("Cooking assistant created successfully.\n"))
                 except Exception as create_error:
                     error_msg = f"ERROR creating cooking assistant: {str(create_error)}"
-                    self.root.after(0, lambda msg=error_msg: self.print_to_console(msg))
+                    self.root.after(0, lambda msg=error_msg: print(msg))
                     return
                 
                 # Create and run event loop for the async cooking assistant
-                self.root.after(0, lambda: self.print_to_console("Starting event loop..."))
+                self.root.after(0, lambda: print("Starting event loop...\n"))
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
                 
                 try:
-                    self.root.after(0, lambda: self.print_to_console("Running cooking assistant..."))
+                    self.root.after(0, lambda: print("Running cooking assistant...\n"))
                     loop.run_until_complete(self.cooking_assistant.run())
                 except Exception as run_error:
                     error_msg = f"ERROR running cooking assistant: {str(run_error)}"
-                    self.root.after(0, lambda msg=error_msg: self.print_to_console(msg))
+                    self.root.after(0, lambda msg=error_msg: print(msg))
                 finally:
                     loop.close()
                     
             except Exception as e:
                 # Make sure the error is displayed in the GUI console
                 error_msg = f"\nUnexpected error: {str(e)}\n"
-                self.root.after(0, lambda msg=error_msg: self.print_to_console(msg))
+                self.root.after(0, lambda msg=error_msg: print(msg))
                 
                 import traceback
-                trace_msg = f"Stack trace: {traceback.format_exc()}"
-                self.root.after(0, lambda msg=trace_msg: self.print_to_console(msg))
-            finally:
-                # Restore original stdout and stdin
-                sys.stdout = original_stdout
-                sys.stdin = original_stdin
+                trace_msg = f"Stack trace: {traceback.format_exc()}\n"
+                self.root.after(0, lambda msg=trace_msg: self.show_text(msg))
                 
         # Start assistant thread
         self.assistant_thread = threading.Thread(target=run_assistant, daemon=True)
         self.assistant_thread.start()
         
         # Add additional message after starting thread
-        self.print_to_console("Thread started, initializing Robotatouille...")
+        print("Thread started, initializing Robotatouille...\n")
+    
+    # ========== CookingUI Interface Implementation ==========
+    
+    def show_text(self, text: str):
+        """Display text in the console/output area"""
+        self.console_output.config(state=tk.NORMAL)
+        self.console_output.insert(tk.END, text)
+        self.console_output.see(tk.END)
+        self.console_output.config(state=tk.DISABLED)
+    
+    def ask_text(self, prompt: str, callback: Callable[[str], None], default: Optional[str] = None):
+        """Ask the user for text input - callback-based approach"""
+        # Display the prompt
+        self.show_text(f"{prompt}\n")
+        
+        # Set up the callback
+        self.current_prompt = prompt
+        self.current_callback = callback
+        self.current_default = default
+        
+        # Show visual indicator
+        self.show_input_prompt()
+        
+        # If there's a default, pre-fill the input
+        if default:
+            self.console_input.delete(0, tk.END)
+            self.console_input.insert(0, default)
+    
+    def show_recipes(self, recipes: List[Dict[str, str]]):
+        """Display a list of proposed recipes"""
+        self.show_text("\n📖 Choix des recettes:\n\n")
+        for idx, recipe in enumerate(recipes, start=1):
+            name = recipe.get("name", f"Recette {idx}")
+            difficulty = recipe.get("difficulty", "")
+            description = recipe.get("description", "")
+            
+            recipe_text = f"{idx}. {name}"
+            if difficulty:
+                recipe_text += f" (Difficulté: {difficulty})"
+            recipe_text += "\n"
+            # if description:
+            #     recipe_text += f"   {description}\n"
+            recipe_text += "\n"
+            
+            self.show_text(recipe_text)
+    
+    def show_ingredients(self, ingredients: List[Dict[str, str]]):
+        """Display ingredients list"""
+        ingredients_text = "Ingrédients:\n\n"
+        for ingredient in ingredients:
+            quantity = ingredient.get("quantity", "")
+            unit = ingredient.get("unit", "")
+            name = ingredient.get("name", "")
+            prep = ingredient.get("preparation", "")
+            
+            ingredients_text += f"• {quantity} {unit} {name}"
+            if prep:
+                ingredients_text += f" ({prep})"
+            ingredients_text += "\n"
+        
+        # Update the ingredients panel
+        self.set_ingredients(ingredients_text)
+        
+        # Also show in console
+        self.show_text(ingredients_text)
+    
+    def show_steps(self, steps: List[str], current_step: int = 0):
+        """Display cooking steps"""
+        self.show_text("\n📋 Étapes de préparation:\n\n")
+        for idx, step in enumerate(steps, start=1):
+            marker = "→" if idx == current_step + 1 else " "
+            self.show_text(f"{marker} {idx}. {step}\n")
+    
+    def show_gantt(self, gantt_data: Dict):
+        """Display Gantt chart data"""
+        # This will be implemented when we work on Gantt chart integration
+        # For now, just a placeholder
+        pass
+    
+    def show_error(self, error_message: str):
+        """Display an error message"""
+        self.show_text(f"\n❌ Erreur: {error_message}\n")
+    
+    def show_success(self, message: str):
+        """Display a success message"""
+        self.show_text(f"\n✓ {message}\n")
+    
+    # ========== Helper Methods ==========
     
     def print_to_console(self, text, end='\n'):
-        """Add text to the console output"""
-        self.console_output.config(state=tk.NORMAL)
-        self.console_output.insert(tk.END, text + end)
-        self.console_output.see(tk.END)  # Scroll to the end
-        self.console_output.config(state=tk.DISABLED)
+        """Add text to the console output (legacy method, now uses show_text)"""
+        self.show_text(text + end)
         
     def show_input_prompt(self):
         """Show visual indicator that input is required"""
@@ -483,27 +477,54 @@ class GUICookingAssistant:
         # Clear input field
         self.console_input.delete(0, tk.END)
         
-        # Echo command to output if not waiting for input
-        if not self.waiting_for_input:
-            self.print_to_console(f"> {command}")
+        # Check if we have a callback waiting (from ask_text)
+        if self.current_callback:
+            # Hide the input prompt
+            self.hide_input_prompt()
             
-            # Process command
-            if command.lower() == "help":
-                self.show_help()
-            elif command.lower() == "clear":
-                self.clear_console()
-            elif command.lower() == "exit" or command.lower() == "quit":
-                self.quit_application()
-            elif command.lower() == "start":
-                self.start_cooking_assistant()
-            elif command.lower() == "ingredients":
-                self.update_ingredients("Sample ingredients:\n- Tomatoes\n- Onions\n- Garlic\n- Basil")
-            elif command.lower() == "debug":
-                # Show debugging information
-                import os
-                import sys
-                
-                debug_info = f"""
+            # Echo the command
+            self.show_text(f"> {command}\n")
+            
+            # Call the callback with the user's input
+            callback = self.current_callback
+            self.current_callback = None
+            self.current_prompt = None
+            self.current_default = None
+            
+            # Execute callback (might be in a different thread, so use root.after)
+            self.root.after(0, lambda: callback(command))
+            return
+        
+        # Otherwise, handle as a regular command
+        self.print_to_console(f"> {command}")
+        
+        # Process command
+        if command.lower() == "help":
+            self.show_help()
+        elif command.lower() == "clear":
+            self.clear_console()
+        elif command.lower() == "exit" or command.lower() == "quit":
+            self.quit_application()
+        # elif command.lower() == "start":
+        #     self.start_cooking_assistant()
+        elif command.lower() == "next":
+            # In the new architecture, 'next' should behave like the physical Next button:
+            # signal the assistant to advance the current step if we're in STEP_EXECUTION.
+            if self.cooking_assistant:
+                try:
+                    self.cooking_assistant._button_next()
+                except Exception as e:
+                    print(f"Error handling 'next' command: {e}")
+            else:
+                print("Assistant is not running; 'next' has no effect.")
+        elif command.lower() == "ingredients":
+            self.update_ingredients("Sample ingredients:\n- Tomatoes\n- Onions\n- Garlic\n- Basil")
+        elif command.lower() == "debug":
+            # Show debugging information
+            import os
+            import sys
+            
+            debug_info = f"""
 DEBUGGING INFORMATION:
 ---------------------
 Current Directory: {os.getcwd()}
@@ -513,15 +534,11 @@ OPENAI_API_KEY exists: {"Yes" if os.getenv("OPENAI_API_KEY") else "No"}
 .env file exists: {"Yes" if os.path.exists(os.path.join(os.getcwd(), ".env")) else "No"}
 Assistant thread active: {"Yes" if self.assistant_thread and self.assistant_thread.is_alive() else "No"}
 """
-                self.print_to_console(debug_info)
-            else:
-                # Just echo back if no cooking assistant is running
-                if not self.assistant_thread or not self.assistant_thread.is_alive():
-                    self.print_to_console(f"Unknown command. Type 'help' for a list of commands.")
+            print(debug_info)
         else:
-            # If waiting for input, pass it to the cooking assistant
-            self.last_input = command
-            self.input_ready.set()  # Signal that input is available
+            # Just echo back if no cooking assistant is running
+            if not self.assistant_thread or not self.assistant_thread.is_alive():
+                self.print_to_console(f"Unknown command. Type 'help' for a list of commands.")
     
     def show_previous_command(self, event=None):
         """Show previous command from history when up arrow is pressed"""
@@ -552,6 +569,7 @@ Assistant thread active: {"Yes" if self.assistant_thread and self.assistant_thre
         
         # Show welcome message again
         self.display_welcome()
+        self.start_cooking_assistant()
     
     def create_simple_gantt(self, steps_text):
         """Create a simple Gantt chart for recipe steps"""

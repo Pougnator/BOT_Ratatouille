@@ -1,34 +1,33 @@
 import asyncio
 import threading
 import time
-from rich.console import Console
-from rich.panel import Panel
-from rich.prompt import Prompt
-from rich.table import Table
-from rich import print as rprint
-
 from .states import StateMachine, CookingState
 from .llm_agent import LLMAgent
 from .timer import CookingTimer
 from .hardware_handler import HardwareHandler
 from .plotly_gantt import PlotlyGanttVisualizer
+from .cooking_ui import CookingUI
 
 
 class CookingAssistant:
-    def __init__(self):
-        self.console = Console()
+    def __init__(self, ui: CookingUI):
+        # We now always assume a UI implementation is provided
+        self.ui = ui
+
         self.state_machine = StateMachine()
         self.llm_agent = LLMAgent()
-        self.timer = CookingTimer(console=self.console)
+
+        # Timer and hardware no longer depend on a console
+        self.timer = CookingTimer(console=None)
         self.hardware = HardwareHandler()
-        self.gantt_visualizer = PlotlyGanttVisualizer(console=self.console)
+        self.gantt_visualizer = PlotlyGanttVisualizer(console=None)
         
         # Use threading Event objects for button communication
         self._next_button_event = threading.Event()
         
         # If running on a Raspberry Pi, set up button callbacks
         if self.hardware.is_raspi:
-            self.console.print("[bold green]✓ Raspberry Pi detected. Setting up GPIO buttons...[/bold green]")
+            print("✓ Raspberry Pi detected. Setting up GPIO buttons...\n")
             self._setup_button_controls()
         
     def display_welcome(self):
@@ -41,47 +40,63 @@ tout au long du processus de cuisine.
 
 Commençons!
 """
-        # self.console.print(Panel(welcome_text, title=  "Robotatouille"))
-        self.console.print(welcome_text)
+        self.ui.show_text(welcome_text)
         
     def display_state(self):
         state_name = self.state_machine.current_state.value.replace('_', ' ').title()
-        self.console.print(f"\n[bold cyan]Current State:[/bold cyan] {state_name}\n")
-        
-    def collect_servings(self):
-        self.console.print("[bold yellow]Pour combien de personnes voulez-vous cuisiner?[/bold yellow]")
-        
-        while True:
-            servings_input = Prompt.ask("Nombre de personnes", default="2")
-            
+        print(f"\nCurrent State: {state_name}\n")
+    
+    async def collect_servings(self):
+        """Collect number of servings - async version using UI callbacks"""
+        def handle_servings_input(input_text: str):
             try:
-                servings = int(servings_input)
+                servings = int(input_text) if input_text else 2
                 if servings > 0:
                     self.state_machine.set_servings(servings)
-                    self.console.print(f"\n[green]✓ On cuisine pour {servings} personnes[/green]")
-                    return True
+                    self.ui.show_success(f"On cuisine pour {servings} personnes")
+                    # Signal that we're done
+                    self._servings_collected.set()
                 else:
-                    self.console.print("[red]Veuillez entrer un nombre positif.[/red]")
+                    self.ui.show_error("Veuillez entrer un nombre positif.")
+                    # Ask again
+                    self.ui.ask_text("Nombre de personnes", handle_servings_input, default="2")
             except ValueError:
-                self.console.print("[red]Veuillez entrer un nombre valide.[/red]")
+                self.ui.show_error("Veuillez entrer un nombre valide.")
+                # Ask again
+                self.ui.ask_text("Nombre de personnes", handle_servings_input, default="2")
         
-    def collect_ingredients(self):
-        self.console.print("[bold yellow]Quels ingrédients avez-vous sous la main?[/bold yellow]")
-        self.console.print("Entrez les ingrédients séparés par des virgules (par exemple: oeufs, riz, tomates)")
+        self.ui.show_text("Pour combien de personnes voulez-vous cuisiner?\n")
+        self._servings_collected = threading.Event()
+        self.ui.ask_text("Nombre de personnes", handle_servings_input, default="2")
         
-        ingredients_input = Prompt.ask("Vos ingrédients")
-        ingredients = [ing.strip() for ing in ingredients_input.split(',') if ing.strip()]
+        # Wait for the callback to complete
+        while not self._servings_collected.is_set():
+            await asyncio.sleep(0.1)
+    
+    async def collect_ingredients(self):
+        """Collect ingredients - async version using UI callbacks"""
+        def handle_ingredients_input(input_text: str):
+            ingredients = [ing.strip() for ing in input_text.split(',') if ing.strip()]
+            if ingredients:
+                self.state_machine.add_ingredients(ingredients)
+                self.ui.show_success(f"J'ai ajouté {len(ingredients)} ingrédients")
+                self._ingredients_collected.set()
+            else:
+                self.ui.show_error("Aucun ingrédient fourni. Veuillez réessayer.")
+                # Ask again
+                self.ui.ask_text("Vos ingrédients", handle_ingredients_input)
         
-        if ingredients:
-            self.state_machine.add_ingredients(ingredients)
-            self.console.print(f"\n[green]✓ J'ai ajouté {len(ingredients)} ingrédients[/green]")
-            return True
-        else:
-            self.console.print("[red]Aucun ingrédient fourni. Veuillez réessayer.[/red]")
-            return False
+        self.ui.show_text("Quels ingrédients avez-vous sous la main?\n")
+        self.ui.show_text("Entrez les ingrédients séparés par des virgules (par exemple: oeufs, riz, tomates)\n")
+        self._ingredients_collected = threading.Event()
+        self.ui.ask_text("Vos ingrédients", handle_ingredients_input)
+        
+        # Wait for the callback to complete
+        while not self._ingredients_collected.is_set():
+            await asyncio.sleep(0.1)
             
     def propose_recipes(self):
-        self.console.print("\n[bold cyan]Analyse des ingrédients et recherche de recettes...[/bold cyan]\n")
+        self.ui.show_text("\nAnalyse des ingrédients et recherche de recettes...\n")
         
         # Check if there's an additional recipe request
         additional_request = self.state_machine.additional_recipe_request
@@ -95,52 +110,51 @@ Commençons!
         # Clear the additional request after using it
         self.state_machine.clear_additional_recipe_request()
         
-        # self.console.print(Panel(recipes_response, title="📖 Choix des recettes", border_style="blue"))
-        # self.console.print(recipes_response)
+        # Extract recipes list from response
         recipes_list = recipes_response.get("recipes", [])
-        iter = 0
-        for recipe in recipes_list:
-            iter += 1
-            recipe_name = recipe.get("name", "")
-            recipe_difficulty = recipe.get("difficulty", "")
-            self.console.print(f"{iter}. {recipe_name} - {recipe_difficulty}")
-        # Extraire seulement les véritables recettes (celles qui commencent par un numéro)
-        # import re
         
-        # # Diviser d'abord par double saut de ligne
-        # parts = recipes_response.split('\n\n')
-        
-        # # Filtrer pour ne garder que les parties qui semblent être des recettes numérotées
-        # recipes_only = []
-        # for part in parts:
-        #     # Vérifier si cette partie commence par un numéro (comme "1." ou "2.")
-        #     first_line = part.strip().split('\n')[0] if part.strip() else ""
-        #     if first_line and re.match(r'^\d+\.', first_line.strip()):
-        #         recipes_only.append(part)
-        
-        # Si aucune recette n'a été trouvée, revenir à la division simple
-        # if not recipes_only:
-        #     recipes_only = parts
+        # Use UI method to display recipes
+        self.ui.show_recipes(recipes_list)
             
+        # Store recipes for selection
         self.state_machine.set_proposed_recipes(recipes_list)
         
-    def confirm_recipe(self):
-        self.console.print("\n[bold yellow]Quel recette voulez-vous cuisiner?[/bold yellow]")
-        self.console.print("Entrez le numéro de la recette (1-4) ou le nom de la recette:")
-        self.console.print("Entrez 0 + instructions additionnelles pour demander plus de recettes")
+    async def confirm_recipe(self):
+        """Confirm recipe selection - async version using UI callbacks"""
+        self.ui.show_text("\nQuel recette voulez-vous cuisiner?\n")
+        self.ui.show_text("Entrez le numéro de la recette (1-4) ou le nom de la recette:\n")
+        self.ui.show_text("Entrez 0 + instructions additionnelles pour demander plus de recettes\n")
         
-        choice = Prompt.ask("Votre choix")
+        # Store the result from processing the choice
+        self._recipe_choice_result = False
         
-        if choice: self.console.print(f"Vous avez choisi la recette: {choice}")
-        else: self.console.print("Aucune recette choisie")
+        def handle_recipe_choice(choice: str):
+            self._recipe_choice_result = self._process_recipe_choice(choice)
+            self._recipe_confirmed.set()
+        
+        self._recipe_confirmed = threading.Event()
+        self.ui.ask_text("Votre choix", handle_recipe_choice)
+        
+        # Wait for the callback to complete
+        while not self._recipe_confirmed.is_set():
+            await asyncio.sleep(0.1)
+        
+        # Return the result from processing the choice
+        return self._recipe_choice_result
+    
+    def _process_recipe_choice(self, choice: str):
+        """Process the recipe choice (shared logic for UI and CLI)"""
       
 
-        choice_str = choice.strip()
+        if not choice:
+            choice_str = ""
+        else:
+            choice_str = choice.strip()
         
         # Check if user wants more recipes
         if choice_str.startswith('0'):
             additional_prompt = choice_str[1:].strip()
-            self.console.print("\n[cyan]Recherche de plus de recettes...[/cyan]")
+            self.ui.show_text("\nRecherche de plus de recettes...\n")
             
             # Go back to the recipe proposal state
             self.state_machine.transition_to(CookingState.RECIPE_PROPOSAL)
@@ -148,65 +162,64 @@ Commençons!
             # If there's an additional prompt, store it for the LLM to use
             if additional_prompt:
                 self.state_machine.additional_recipe_request = additional_prompt
-                self.console.print(f"[italic]Avec précision: {additional_prompt}[/italic]")
+                self.ui.show_text(f"Avec précision: {additional_prompt}\n")
             
             return False
         elif choice_str:
             # Vérifier si l'entrée est un numéro (1, 2, 3, etc.)
+            recipe_name = None
             try:
                 # Si c'est un numéro, récupérer la recette correspondante
                 recipe_index = int(choice_str) - 1  # -1 car les numéros commencent à 1, mais les index à 0
-                
                 
                 if 0 <= recipe_index < len(self.state_machine.proposed_recipes):
                     # Utiliser le contenu de la recette proposée pour extraire son nom
                     recipe_content = self.state_machine.proposed_recipes[recipe_index]
                     
-                    # Extraire le nom de la recette (généralement la première ligne de chaque recette proposée)
+                    # Extraire le nom de la recette
                     recipe_name = recipe_content.get("name", "")
                     recipe_description = recipe_content.get("description", "")
-                    self.console.print(recipe_name)
-                    self.console.print(recipe_description)
-                
+                    
+                    self.ui.show_text(f"\nVous avez choisi: {recipe_name}\n")
+                    if recipe_description:
+                        self.ui.show_text(f"{recipe_description}\n")
+                else:
+                    self.ui.show_error("Numéro de recette invalide.")
+                    return False
             
+            except ValueError:
+                # Not a number, treat as recipe name
+                recipe_name = choice_str
+                self.ui.show_text(f"\nVous avez choisi: {recipe_name}\n")
             except Exception as e:
-                    self.console.print(f"[red]Erreur lors de la sélection de la recette: {e}[/red]")
-                    self.console.print(recipe_content)
-                    self.console.print(self.state_machine.proposed_recipes)
-                    self.console.print(recipe_index)
+                self.ui.show_error(f"Erreur lors de la sélection de la recette: {e}")
+                return False
             
+            # Ensure recipe_name is set before proceeding
+            if not recipe_name:
+                self.ui.show_error("Impossible de déterminer le nom de la recette.")
+                return False
+            
+            # Get recipe steps from LLM
             recipe_data = self.llm_agent.get_recipe_steps(
                 recipe_name,
                 self.state_machine.ingredients,
                 self.state_machine.servings
             )
-
-            # Explain the ingredients needed in natural language
-         
-            ingredients_natural_list = self.llm_agent.explain_ingredients_naturally(
-                self.state_machine.ingredients,
-                recipe_name,
-                recipe_data.get("steps", [])
-            )
-            self.console.print(Panel(ingredients_natural_list, title="🧾 Ingrédients", border_style="blue"))
             
-            # Display ingredients in a formatted way
+            # Handle case where recipe_data might be a JSON string
+            if isinstance(recipe_data, str):
+                import json
+                try:
+                    recipe_data = json.loads(recipe_data)
+                except json.JSONDecodeError:
+                    self.ui.show_error("Erreur lors du parsing de la recette.")
+                    return False
+
+            # Display ingredients
             ingredients_list = recipe_data.get("ingredients", [])
             if ingredients_list:
-                table = Table(title="🧾 Ingredients")
-                table.add_column("Quantity", style="cyan")
-                table.add_column("Unit", style="green")
-                table.add_column("Ingredient", style="yellow")
-                table.add_column("Preparation", style="magenta")
-                
-                for ingredient in ingredients_list:
-                    quantity = ingredient.get("quantity", "")
-                    unit = ingredient.get("unit", "")
-                    name = ingredient.get("name", "")
-                    prep = ingredient.get("preparation", "")
-                    table.add_row(quantity, unit, name, prep)
-                
-                self.console.print(table)
+                self.ui.show_ingredients(ingredients_list)
             
             # Set recipe steps and name
             steps_data = recipe_data.get("steps", [])
@@ -218,6 +231,8 @@ Commençons!
                     steps.append(step.get("description", ""))
                 else:
                     steps.append(step)
+            
+            self.ui.show_steps(steps, current_step=0)
                     
             self.state_machine.set_recipe_steps(steps)
             self.state_machine.selected_recipe = recipe_data.get("title", recipe_name)
@@ -256,88 +271,54 @@ Commençons!
                 recipe_name=recipe_title
             )
             
-            self.console.print(Panel(
-                f"Diagramme de Gantt généré :\n"
-                f"• Format JSON: {gantt_file}\n"
-                f"• Visualisation HTML interactive: {result['html_file']}",
-                title="📊 Planification", 
-                border_style="green"
-            ))
+            print("\n Diagramme de Gantt généré\n")
+            print(gantt_data)
             
             return True
         return False
         
     def display_cooking_steps(self):
         if not self.state_machine.recipe_steps:
-            self.console.print("[red]Aucune étape de préparation disponible.[/red]")
+            self.ui.show_error("Aucune étape de préparation disponible.")
             return
-            
-        table = Table(title=f"📋 Étapes de préparation pour {self.state_machine.selected_recipe}")
-        table.add_column("Étape", style="cyan", width=8)
-        table.add_column("Instruction", style="white")
         
-        for idx, step in enumerate(self.state_machine.recipe_steps, 1):
-            marker = "→" if idx == self.state_machine.current_step + 1 else " "
-            table.add_row(f"{marker} {idx}", step)
-            
-        self.console.print(table)
+        # Use UI method to show steps
+        self.ui.show_steps(self.state_machine.recipe_steps, current_step=self.state_machine.current_step)
         
     def execute_current_step(self):
         current_step = self.state_machine.get_current_step()
         
         if not current_step:
-            self.console.print("[yellow]C'est fini! Il ne reste plus d'étapes![/yellow]")
+            self.ui.show_text("C'est fini! Il ne reste plus d'étapes!\n")
             return False
             
         step_num = self.state_machine.current_step + 1
         total_steps = len(self.state_machine.recipe_steps)
         
-        self.console.print(f"\n[bold green]Étape {step_num}/{total_steps}:[/bold green]")
-        self.console.print(Panel(current_step, border_style="green"))
+        self.ui.show_text(f"\nÉtape {step_num}/{total_steps}:\n")
+        self.ui.show_text(f"{current_step}\n")
         
         # If on Raspberry Pi, display button controls guide
         if self.hardware.is_raspi:
-            self.console.print("\n[dim]Contrôles physiques:[/dim]")
-            self.console.print("[dim]- Bouton sur GPIO 6: Next (passer à l'étape suivante)[/dim]")
-            self.console.print("[dim]- Bouton sur GPIO 19: Help (obtenir de l'aide)[/dim]")
-            self.console.print("[dim]- Bouton sur GPIO 0: Back/Cancel (annuler minuteur)[/dim]")
+            self.ui.show_text(
+                "\nContrôles physiques:\n"
+                "- Bouton sur GPIO 6: Next (passer à l'étape suivante)\n"
+                "- Bouton sur GPIO 19: Help (obtenir de l'aide)\n"
+                "- Bouton sur GPIO 0: Back/Cancel (annuler minuteur)\n"
+            )
         
         # Clear any previous button events
         self._next_button_event.clear()
         
-        # Function to get console input without blocking button presses
+        # Function to get input without blocking button presses (CLI legacy, now simplified for UI)
         def get_interruptible_input():
-            class InputResult:
-                value = None
-                
-            # Create a thread to get input
-            def input_thread_func():
-                InputResult.value = Prompt.ask("", console=self.console).strip().lower()
-                
-            # Display info and prompt
-            active_timers = self.timer.get_active_timers()
-            if active_timers:
-                self.console.print("\n[bold cyan]Active Timers:[/bold cyan]")
-                for timer_id, timer_info in active_timers.items():
-                    time_str = self.timer.format_time(timer_info['remaining'])
-                    self.console.print(f"  ⏱️  {timer_info['name']}: {time_str} remaining")
-                    
-            self.console.print("\n[dim]Commandes: 'next' (continue), 'timer <duration>' (set timer), 'ask <question>' (ask for help), 'quit' (exit)[/dim]")
-            
-            # Start input thread
-            input_thread = threading.Thread(target=input_thread_func)
-            input_thread.daemon = True
-            input_thread.start()
-            
-            # Wait for either input completion or button press
-            while input_thread.is_alive():
+            # For now, in UI mode, we only support 'next' via button;
+            # you can later extend this to use UI.ask_text if needed.
+            while True:
                 if self._next_button_event.is_set():
                     self._next_button_event.clear()
-                    return "next"  # Simulate 'next' command
-                time.sleep(0.1)  # Check 10 times per second
-            
-            # Input received
-            return InputResult.value
+                    return "next"
+                time.sleep(0.1)
             
         while True:
             # Get input (might be interrupted by button press)
@@ -345,22 +326,7 @@ Commençons!
             
             if user_input == 'next':
                 return True
-            elif user_input.startswith('timer '):
-                duration_str = user_input[6:].strip()
-                duration_seconds = self.timer.parse_duration(duration_str)
-                if duration_seconds:
-                    timer_id = self.timer.start_timer(duration_seconds, f"Step {step_num}")
-                    self.console.print(f"[green]✓ Timer set for {self.timer.format_time(duration_seconds)}[/green]")
-                else:
-                    self.console.print("[red]Durée invalide. Essayez '10 min', '30 sec', etc.[/red]")
-            elif user_input.startswith('ask '):
-                question = user_input[4:].strip()
-                response = self.llm_agent.guide_step(current_step, question)
-                self.console.print(Panel(response, title="💡 Conseil de cuisine", border_style="yellow"))
-            elif user_input == 'quit':
-                return False
-            else:
-                self.console.print("[red]Commande inconnue. Essayez 'next', 'timer <durée>', ou 'poser une <question>'[/red]")
+            # In UI-only mode, other text commands are not handled here yet
                 
     def _setup_button_controls(self):
         """Set up button controls for GPIO pins."""
@@ -375,20 +341,20 @@ Commençons!
         
         # Start polling the buttons
         self.hardware.start_polling()
-        self.console.print("[green]✓ Button controls initialized[/green]")
+        self.ui.show_text("✓ Button controls initialized\n")
     
     def _button_next(self):
         """Handler for the 'Next' button (GPIO 6)"""
-        self.console.print("[bold blue]⏭️ Button pressed: Next[/bold blue]")
+        print("Button pressed: Next\n")
         # Simulate 'next' command when in step execution
         if self.state_machine.current_state == CookingState.STEP_EXECUTION:
-            self.console.print("[green]Moving to next step...[/green]")
+            print("Moving to next step...\n")
             # Signal the event to interrupt input
             self._next_button_event.set()
     
     def _button_help(self):
         """Handler for the 'Help' button (GPIO 19)"""
-        self.console.print("[bold yellow]❓ Button pressed: Help[/bold yellow]")
+        self.ui.show_text("❓ Button pressed: Help\n")
         # Get current step if in execution mode
         if self.state_machine.current_state == CookingState.STEP_EXECUTION:
             current_step = self.state_machine.get_current_step()
@@ -397,15 +363,15 @@ Commençons!
                     current_step, 
                     "Explique cette étape de manière plus détaillée"
                 )
-                self.console.print(Panel(response, title="💡 Aide (via bouton)", border_style="yellow"))
+                self.ui.show_text(f"\nAide (via bouton):\n{response}\n")
     
     def _button_back(self):
         """Handler for the 'Back/Cancel' button (GPIO 0)"""
-        self.console.print("[bold red]⏮️ Button pressed: Back/Cancel[/bold red]")
+        self.ui.show_text("⏮️ Button pressed: Back/Cancel\n")
         # Different behavior depending on state
         if self.state_machine.current_state == CookingState.RECIPE_CONFIRMATION:
             # Go back to recipe proposal
-            self.console.print("[yellow]Retour à la proposition de recettes...[/yellow]")
+            self.ui.show_text("Retour à la proposition de recettes...\n")
             self.state_machine.transition_to(CookingState.RECIPE_PROPOSAL)
         elif self.state_machine.current_state == CookingState.STEP_EXECUTION:
             # Cancel current timer if any
@@ -413,13 +379,13 @@ Commençons!
             if active_timers:
                 timer_id = list(active_timers.keys())[0]  # Cancel first timer
                 self.timer.stop_timer(timer_id)
-                self.console.print(f"[yellow]Timer '{active_timers[timer_id]['name']}' annulé[/yellow]")
+                self.ui.show_text(f"Timer '{active_timers[timer_id]['name']}' annulé\n")
     
     async def run(self):
         try:
             self.display_welcome()
             
-            self.collect_servings()
+            await self.collect_servings()
             
             self.state_machine.transition_to(CookingState.INGREDIENT_COLLECTION)
             
@@ -427,15 +393,15 @@ Commençons!
                 self.display_state()
                 
                 if self.state_machine.current_state == CookingState.INGREDIENT_COLLECTION:
-                    if self.collect_ingredients():
-                        self.state_machine.transition_to(CookingState.RECIPE_PROPOSAL)
+                    await self.collect_ingredients()
+                    self.state_machine.transition_to(CookingState.RECIPE_PROPOSAL)
                         
                 elif self.state_machine.current_state == CookingState.RECIPE_PROPOSAL:
                     self.propose_recipes()
                     self.state_machine.transition_to(CookingState.RECIPE_CONFIRMATION)
                     
                 elif self.state_machine.current_state == CookingState.RECIPE_CONFIRMATION:
-                    if self.confirm_recipe():
+                    if await self.confirm_recipe():
                         self.state_machine.transition_to(CookingState.COOKING_GUIDANCE)
                     
                 elif self.state_machine.current_state == CookingState.COOKING_GUIDANCE:
@@ -445,23 +411,19 @@ Commençons!
                 elif self.state_machine.current_state == CookingState.STEP_EXECUTION:
                     if self.execute_current_step():
                         if self.state_machine.is_cooking_complete():
+                            print("Cooking complete\n")
                             self.state_machine.transition_to(CookingState.COMPLETED)
+
                         else:
                             self.state_machine.next_step()
                     else:
                         break
                         
                 elif self.state_machine.current_state == CookingState.COMPLETED:
-                    self.console.print("\n[bold green]🎉 Félicitations! Vous avez terminé la recette![/bold green]")
-                    self.console.print(Panel("Regalez-vous et ... bon appétit bien sûr! 🍽️", border_style="green"))
-                    
-                    again = Prompt.ask("\nVoulez-vous cuisiner une autre chose?", choices=["yes", "no"], default="no")
-                    if again == "yes":
-                        self.state_machine.reset()
-                        self.llm_agent.reset_conversation()
-                        self.state_machine.transition_to(CookingState.INGREDIENT_COLLECTION)
-                    else:
-                        break
+                    self.ui.show_text("\n🎉 Félicitations! Vous avez terminé la recette!\n")
+                    self.ui.show_text("Regalez-vous et ... bon appétit bien sûr! 🍽️\n")
+                    # For now, just break - we can add "cook again" functionality later
+                    break
                 else:
                     break
         finally:
@@ -471,8 +433,7 @@ Commençons!
                 
             # Clean up timer resources
             self.timer.cleanup()
-                
-            self.console.print("\n[bold cyan]Merci d'avoir fait confiance à Robotatouille! A la prochaine! 👋[/bold cyan]")
+            self.ui.show_text("\nMerci d'avoir fait confiance à Robotatouille! A la prochaine! 👋\n")
             
     def _generate_gantt_chart(self, steps_data):
         """
