@@ -147,7 +147,8 @@ Commençons!
       
 
         if not choice:
-            choice_str = ""
+            print("Veuillez entrer un numéro de recette.")
+            return False
         else:
             choice_str = choice.strip()
         
@@ -165,117 +166,105 @@ Commençons!
                 self.ui.show_text(f"Avec précision: {additional_prompt}\n")
             
             return False
-        elif choice_str:
-            # Vérifier si l'entrée est un numéro (1, 2, 3, etc.)
-            recipe_name = None
-            try:
-                # Si c'est un numéro, récupérer la recette correspondante
-                recipe_index = int(choice_str) - 1  # -1 car les numéros commencent à 1, mais les index à 0
-                
-                if 0 <= recipe_index < len(self.state_machine.proposed_recipes):
-                    # Utiliser le contenu de la recette proposée pour extraire son nom
-                    recipe_content = self.state_machine.proposed_recipes[recipe_index]
-                    
-                    # Extraire le nom de la recette
-                    recipe_name = recipe_content.get("name", "")
-                    recipe_description = recipe_content.get("description", "")
-                    
-                    self.ui.show_text(f"\nVous avez choisi: {recipe_name}\n")
-                    if recipe_description:
-                        self.ui.show_text(f"{recipe_description}\n")
-                else:
-                    self.ui.show_error("Numéro de recette invalide.")
-                    return False
-            
-            except ValueError:
-                # Not a number, treat as recipe name
-                recipe_name = choice_str
-                self.ui.show_text(f"\nVous avez choisi: {recipe_name}\n")
-            except Exception as e:
-                self.ui.show_error(f"Erreur lors de la sélection de la recette: {e}")
-                return False
-            
-            # Ensure recipe_name is set before proceeding
-            if not recipe_name:
-                self.ui.show_error("Impossible de déterminer le nom de la recette.")
-                return False
-            
-            # Get recipe steps from LLM
-            recipe_data = self.llm_agent.get_recipe_steps(
-                recipe_name,
-                self.state_machine.ingredients,
-                self.state_machine.servings
-            )
-            
-            # Handle case where recipe_data might be a JSON string
-            if isinstance(recipe_data, str):
-                import json
-                try:
-                    recipe_data = json.loads(recipe_data)
-                except json.JSONDecodeError:
-                    self.ui.show_error("Erreur lors du parsing de la recette.")
-                    return False
 
-            # Display ingredients
-            ingredients_list = recipe_data.get("ingredients", [])
-            if ingredients_list:
-                self.ui.show_ingredients(ingredients_list)
+        # At this point, the choice must be a number
+        recipe_name = None
+        try:
+            recipe_index = int(choice_str) - 1  # user numbers start at 1
+        except ValueError:
+            self.ui.show_error("Veuillez entrer un numéro de recette valide (par ex. 1, 2, 3...).")
+            return False
+
+        if 0 <= recipe_index < len(self.state_machine.proposed_recipes):
+            # Utiliser le contenu de la recette proposée pour extraire son nom
+            recipe_content = self.state_machine.proposed_recipes[recipe_index]
             
-            # Set recipe steps and name
-            steps_data = recipe_data.get("steps", [])
+            # Extraire le nom de la recette
+            recipe_name = recipe_content.get("name", "")
+            recipe_description = recipe_content.get("description", "")
             
-            # Extract just the description for display in steps
-            steps = []
-            for step in steps_data:
-                if isinstance(step, dict):
-                    steps.append(step.get("description", ""))
-                else:
-                    steps.append(step)
-            
-            self.ui.show_steps(steps, current_step=0)
-                    
-            self.state_machine.set_recipe_steps(steps)
-            self.state_machine.selected_recipe = recipe_data.get("title", recipe_name)
-            
-            # Store the detailed steps for Gantt chart
-            self.state_machine.detailed_steps = steps_data
-            
-            # Générer le diagramme de Gantt (uniquement à partir des descriptions d'étapes)
-            # Éviter de passer l'objet recipe_data complet qui peut corrompre le JSON
-            steps_for_gantt = []
-            for i, step in enumerate(steps_data):
-                if isinstance(step, dict):
-                    # Créer une copie simplifiée de l'étape pour éviter la corruption
-                    steps_for_gantt.append({
-                        "id": step.get("id", str(i+1)),
-                        "description": step.get("description", ""),
-                        "duration_minutes": step.get("duration_minutes", 5),
-                        "dependencies": step.get("dependencies", [])
-                    })
-                else:
-                    # Pour les étapes en chaîne de caractères
-                    steps_for_gantt.append({
-                        "id": str(i+1),
-                        "description": str(step),
-                        "duration_minutes": 5,
-                        "dependencies": []
-                    })
-            
-            gantt_data = self._generate_gantt_chart(steps_for_gantt)
-            recipe_title = recipe_data.get("title", recipe_name)
-            gantt_file = self._save_gantt_chart(gantt_data, recipe_title)
-            
-            # Créer la visualisation Plotly interactive
-            result = self.gantt_visualizer.process_gantt_file(
-                gantt_file,
-                recipe_name=recipe_title
-            )
-            
-            print("\n Diagramme de Gantt généré\n")
-            print(gantt_data)
-            
-            return True
-        return False
+            self.ui.show_text(f"\nVous avez choisi: {recipe_name}\n")
+            if recipe_description:
+                self.ui.show_text(f"{recipe_description}\n")
+        else:
+            self.ui.show_error("Numéro de recette invalide.")
+            return False
+        
+        # Get recipe steps from LLM
+        recipe_data = self.llm_agent.get_recipe_steps(
+            recipe_name,
+            self.state_machine.ingredients,
+            self.state_machine.servings
+        )
+        
+        # Handle case where recipe_data might be a JSON string
+        if isinstance(recipe_data, str):
+            import json
+            try:
+                recipe_data = json.loads(recipe_data)
+            except json.JSONDecodeError:
+                self.ui.show_error("Erreur lors du parsing de la recette.")
+                return False
+
+        # Display ingredients
+        ingredients_list = recipe_data.get("ingredients", [])
+        if ingredients_list:
+            self.ui.show_ingredients(ingredients_list)
+        
+        # Set recipe steps and name
+        steps_data = recipe_data.get("steps", [])
+        
+        # Extract just the description for display in steps
+        steps = []
+        for step in steps_data:
+            if isinstance(step, dict):
+                steps.append(step.get("description", ""))
+            else:
+                steps.append(step)
+        
+        self.ui.show_steps(steps, current_step=0)
+                
+        self.state_machine.set_recipe_steps(steps)
+        self.state_machine.selected_recipe = recipe_data.get("title", recipe_name)
+        
+        # Store the detailed steps for Gantt chart
+        self.state_machine.detailed_steps = steps_data
+        
+        # Générer le diagramme de Gantt (uniquement à partir des descriptions d'étapes)
+        # Éviter de passer l'objet recipe_data complet qui peut corrompre le JSON
+        steps_for_gantt = []
+        for i, step in enumerate(steps_data):
+            if isinstance(step, dict):
+                # Créer une copie simplifiée de l'étape pour éviter la corruption
+                steps_for_gantt.append({
+                    "id": step.get("id", str(i+1)),
+                    "description": step.get("description", ""),
+                    "duration_minutes": step.get("duration_minutes", 5),
+                    "dependencies": step.get("dependencies", [])
+                })
+            else:
+                # Pour les étapes en chaîne de caractères
+                steps_for_gantt.append({
+                    "id": str(i+1),
+                    "description": str(step),
+                    "duration_minutes": 5,
+                    "dependencies": []
+                })
+        
+        gantt_data = self._generate_gantt_chart(steps_for_gantt)
+        recipe_title = recipe_data.get("title", recipe_name)
+        gantt_file = self._save_gantt_chart(gantt_data, recipe_title)
+        
+        # Créer la visualisation Plotly interactive
+        result = self.gantt_visualizer.process_gantt_file(
+            gantt_file,
+            recipe_name=recipe_title
+        )
+        
+        print("\n Diagramme de Gantt généré\n")
+        print(gantt_data)
+        
+        return True
         
     def display_cooking_steps(self):
         if not self.state_machine.recipe_steps:
@@ -354,16 +343,16 @@ Commençons!
     
     def _button_help(self):
         """Handler for the 'Help' button (GPIO 19)"""
-        self.ui.show_text("❓ Button pressed: Help\n")
-        # Get current step if in execution mode
-        if self.state_machine.current_state == CookingState.STEP_EXECUTION:
-            current_step = self.state_machine.get_current_step()
-            if current_step:
-                response = self.llm_agent.guide_step(
-                    current_step, 
-                    "Explique cette étape de manière plus détaillée"
-                )
-                self.ui.show_text(f"\nAide (via bouton):\n{response}\n")
+        self.ui.show_text("❓ Bouton d'aide pressé. Posez votre question.\n")
+        # Only allow questions during step execution
+        if self.state_machine.current_state != CookingState.STEP_EXECUTION:
+            self.ui.show_error("Vous ne pouvez poser une question qu'en cours d'étape.")
+            return
+
+        def on_question(question: str):
+            self.handle_help_question(question)
+
+        self.ui.ask_text("Votre question", on_question)
     
     def _button_back(self):
         """Handler for the 'Back/Cancel' button (GPIO 0)"""
@@ -380,6 +369,25 @@ Commençons!
                 timer_id = list(active_timers.keys())[0]  # Cancel first timer
                 self.timer.stop_timer(timer_id)
                 self.ui.show_text(f"Timer '{active_timers[timer_id]['name']}' annulé\n")
+
+    def handle_help_question(self, question: str):
+        """Handle a help question about the current step (from button or console)."""
+        # Allow questions at any time during the recipe, as long as it's not finished
+        if self.state_machine.is_cooking_complete():
+            self.ui.show_error("La recette est terminée, il n'y a plus d'étapes à expliquer.")
+            return
+
+        current_step = self.state_machine.get_current_step()
+        if not current_step:
+            self.ui.show_error("Aucune étape en cours pour poser une question.")
+            return
+
+        # Ask the LLM for guidance about this step
+        try:
+            response = self.llm_agent.guide_step(current_step, question)
+            self.ui.show_text(f"\n💡 Conseil de cuisine:\n{response}\n")
+        except Exception as e:
+            self.ui.show_error(f"Erreur lors de la demande d'aide: {e}")
     
     async def run(self):
         try:
