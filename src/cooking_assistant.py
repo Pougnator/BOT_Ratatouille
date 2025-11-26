@@ -25,10 +25,17 @@ class CookingAssistant:
         # Use threading Event objects for button communication
         self._next_button_event = threading.Event()
         
+        # Flag to signal the assistant to stop
+        self._should_stop = threading.Event()
+        
         # If running on a Raspberry Pi, set up button callbacks
         if self.hardware.is_raspi:
             print("✓ Raspberry Pi detected. Setting up GPIO buttons...\n")
             self._setup_button_controls()
+    
+    def stop(self):
+        """Signal the assistant to stop gracefully"""
+        self._should_stop.set()
         
     def display_welcome(self):
         welcome_text = """
@@ -405,9 +412,16 @@ Commençons!
             
             await self.collect_servings()
             
+            if self._should_stop.is_set():
+                return
+            
             self.state_machine.transition_to(CookingState.INGREDIENT_COLLECTION)
             
             while True:
+                # Check if we should stop
+                if self._should_stop.is_set():
+                    break
+                    
                 self.display_state()
                 
                 if self.state_machine.current_state == CookingState.INGREDIENT_COLLECTION:

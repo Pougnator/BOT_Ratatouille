@@ -233,6 +233,43 @@ class GUICookingAssistant(CookingUI):
         """Clear the console output"""
         self.console_output.delete(1.0, tk.END)
     
+    def restart(self):
+        """Restart the cooking assistant - clear everything and reset to STARTING state"""
+        # Stop the current assistant thread if running
+        if self.cooking_assistant:
+            self.cooking_assistant.stop()
+        
+        # Wait for the thread to finish (with timeout)
+        if self.assistant_thread and self.assistant_thread.is_alive():
+            self.assistant_thread.join(timeout=2.0)  # Wait up to 2 seconds
+            if self.assistant_thread.is_alive():
+                print("Warning: Assistant thread did not stop in time, continuing anyway...\n")
+        
+        # Reset assistant reference BEFORE clearing (to prevent new messages)
+        self.cooking_assistant = None
+        self.assistant_thread = None
+        
+        # Clear console - force update
+        self.console_output.config(state=tk.NORMAL)
+        self.console_output.delete(1.0, tk.END)
+        self.console_output.config(state=tk.DISABLED)
+        self.root.update_idletasks()  # Force UI update
+        
+        # Clear ingredients panel
+        self.ingredients_box.config(state=tk.NORMAL)
+        self.ingredients_box.delete(1.0, tk.END)
+        self.ingredients_box.config(state=tk.DISABLED)
+        
+        # Clear Gantt chart panel
+        self.gantt_box.config(state=tk.NORMAL)
+        self.gantt_box.delete(1.0, tk.END)
+        self.gantt_box.insert(tk.END, "Gantt chart will appear here")
+        self.gantt_box.config(state=tk.DISABLED)
+        
+        # Show welcome message
+        self.display_welcome()
+        self.start_cooking_assistant()
+    
     def quit_application(self):
         """Exit the application"""
         if messagebox.askyesno("Quit", "Are you sure you want to quit?"):
@@ -504,6 +541,8 @@ class GUICookingAssistant(CookingUI):
             self.show_help()
         elif command.lower() == "clear":
             self.clear_console()
+        elif command.lower() == "restart":
+            self.restart()
         elif command.lower() == "exit" or command.lower() == "quit":
             self.quit_application()
         # elif command.lower() == "start":
