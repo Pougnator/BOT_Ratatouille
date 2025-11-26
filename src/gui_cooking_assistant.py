@@ -520,15 +520,15 @@ class GUICookingAssistant(CookingUI):
         elif command.lower() == "ingredients":
             self.update_ingredients("Sample ingredients:\n- Tomatoes\n- Onions\n- Garlic\n- Basil")
         elif command.lower().startswith("ask "):
-            # Console 'ask' command: ask a question about the current step
+            # Console 'ask' command: general cooking question, handled by the assistant
             question = command[4:].strip()
             if not question:
-                self.print_to_console("Veuillez formuler une question après 'ask'.")
+                print("Veuillez formuler une question après 'ask'.")
             elif not self.cooking_assistant:
-                self.print_to_console("Assistant is not running; cannot ask a question.")
+                print("Assistant is not running; cannot ask a question.")
             else:
                 try:
-                    self.cooking_assistant.handle_help_question(question)
+                    self.cooking_assistant.ask_question(question)
                 except Exception as e:
                     print(f"Error handling 'ask' command: {e}")
         elif command.lower() == "debug":

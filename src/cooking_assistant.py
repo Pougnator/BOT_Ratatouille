@@ -149,10 +149,10 @@ Commençons!
         if not choice:
             print("Veuillez entrer un numéro de recette.")
             return False
-        else:
-            choice_str = choice.strip()
+
+        choice_str = choice.strip()
         
-        # Check if user wants more recipes
+        # Check if user wants more recipes (0 + optional extra prompt)
         if choice_str.startswith('0'):
             additional_prompt = choice_str[1:].strip()
             self.ui.show_text("\nRecherche de plus de recettes...\n")
@@ -164,16 +164,18 @@ Commençons!
             if additional_prompt:
                 self.state_machine.additional_recipe_request = additional_prompt
                 self.ui.show_text(f"Avec précision: {additional_prompt}\n")
-            
             return False
 
-        # At this point, the choice must be a number
-        recipe_name = None
-        try:
-            recipe_index = int(choice_str) - 1  # user numbers start at 1
-        except ValueError:
-            self.ui.show_error("Veuillez entrer un numéro de recette valide (par ex. 1, 2, 3...).")
+        # If the choice is not a pure number, treat it as a general question
+        # e.g. "c'est quoi la premiere recette"
+        if not choice_str.isdigit():
+            self.ask_question(choice_str)
+            # Stay in RECIPE_CONFIRMATION state
             return False
+
+        # At this point, the choice is a valid number string
+        recipe_name = None
+        recipe_index = int(choice_str) - 1  # user numbers start at 1
 
         if 0 <= recipe_index < len(self.state_machine.proposed_recipes):
             # Utiliser le contenu de la recette proposée pour extraire son nom
@@ -344,13 +346,9 @@ Commençons!
     def _button_help(self):
         """Handler for the 'Help' button (GPIO 19)"""
         self.ui.show_text("❓ Bouton d'aide pressé. Posez votre question.\n")
-        # Only allow questions during step execution
-        if self.state_machine.current_state != CookingState.STEP_EXECUTION:
-            self.ui.show_error("Vous ne pouvez poser une question qu'en cours d'étape.")
-            return
 
         def on_question(question: str):
-            self.handle_help_question(question)
+            self.ask_question(question)
 
         self.ui.ask_text("Votre question", on_question)
     
@@ -370,21 +368,34 @@ Commençons!
                 self.timer.stop_timer(timer_id)
                 self.ui.show_text(f"Timer '{active_timers[timer_id]['name']}' annulé\n")
 
-    def handle_help_question(self, question: str):
-        """Handle a help question about the current step (from button or console)."""
-        # Allow questions at any time during the recipe, as long as it's not finished
-        if self.state_machine.is_cooking_complete():
-            self.ui.show_error("La recette est terminée, il n'y a plus d'étapes à expliquer.")
-            return
+    def ask_question(self, question: str):
+        """Handle a general cooking question in any state (from button or console)."""
+        # Build a general context string based on what we know
+        context_parts = []
 
+        # Selected recipe
+        if self.state_machine.selected_recipe:
+            context_parts.append(f"Recette sélectionnée: {self.state_machine.selected_recipe}")
+
+        # Ingredients
+        if self.state_machine.ingredients:
+            ing_list = ", ".join(self.state_machine.ingredients)
+            context_parts.append(f"Ingrédients disponibles: {ing_list}")
+
+        # Current step (if any)
         current_step = self.state_machine.get_current_step()
-        if not current_step:
-            self.ui.show_error("Aucune étape en cours pour poser une question.")
-            return
+        if current_step:
+            context_parts.append(f"Étape en cours: {current_step}")
 
-        # Ask the LLM for guidance about this step
+        # Fallback generic context
+        if not context_parts:
+            context_parts.append("Contexte: Assistant de cuisine Robotatouille.")
+
+        context = "\n".join(context_parts)
+
         try:
-            response = self.llm_agent.guide_step(current_step, question)
+            # Reuse guide_step as a generic Q&A with this context
+            response = self.llm_agent.guide_step(context, question)
             self.ui.show_text(f"\n💡 Conseil de cuisine:\n{response}\n")
         except Exception as e:
             self.ui.show_error(f"Erreur lors de la demande d'aide: {e}")
