@@ -96,26 +96,33 @@ Commençons!
         self.state_machine.clear_additional_recipe_request()
         
         # self.console.print(Panel(recipes_response, title="📖 Choix des recettes", border_style="blue"))
-        self.console.print(recipes_response)
+        # self.console.print(recipes_response)
+        recipes_list = recipes_response.get("recipes", [])
+        iter = 0
+        for recipe in recipes_list:
+            iter += 1
+            recipe_name = recipe.get("name", "")
+            recipe_difficulty = recipe.get("difficulty", "")
+            self.console.print(f"{iter}. {recipe_name} - {recipe_difficulty}")
         # Extraire seulement les véritables recettes (celles qui commencent par un numéro)
-        import re
+        # import re
         
-        # Diviser d'abord par double saut de ligne
-        parts = recipes_response.split('\n\n')
+        # # Diviser d'abord par double saut de ligne
+        # parts = recipes_response.split('\n\n')
         
-        # Filtrer pour ne garder que les parties qui semblent être des recettes numérotées
-        recipes_only = []
-        for part in parts:
-            # Vérifier si cette partie commence par un numéro (comme "1." ou "2.")
-            first_line = part.strip().split('\n')[0] if part.strip() else ""
-            if first_line and re.match(r'^\d+\.', first_line.strip()):
-                recipes_only.append(part)
+        # # Filtrer pour ne garder que les parties qui semblent être des recettes numérotées
+        # recipes_only = []
+        # for part in parts:
+        #     # Vérifier si cette partie commence par un numéro (comme "1." ou "2.")
+        #     first_line = part.strip().split('\n')[0] if part.strip() else ""
+        #     if first_line and re.match(r'^\d+\.', first_line.strip()):
+        #         recipes_only.append(part)
         
         # Si aucune recette n'a été trouvée, revenir à la division simple
-        if not recipes_only:
-            recipes_only = parts
+        # if not recipes_only:
+        #     recipes_only = parts
             
-        self.state_machine.set_proposed_recipes(recipes_only)
+        self.state_machine.set_proposed_recipes(recipes_list)
         
     def confirm_recipe(self):
         self.console.print("\n[bold yellow]Quel recette voulez-vous cuisiner?[/bold yellow]")
@@ -124,6 +131,10 @@ Commençons!
         
         choice = Prompt.ask("Votre choix")
         
+        if choice: self.console.print(f"Vous avez choisi la recette: {choice}")
+        else: self.console.print("Aucune recette choisie")
+      
+
         choice_str = choice.strip()
         
         # Check if user wants more recipes
@@ -152,27 +163,17 @@ Commençons!
                     recipe_content = self.state_machine.proposed_recipes[recipe_index]
                     
                     # Extraire le nom de la recette (généralement la première ligne de chaque recette proposée)
-                    recipe_lines = recipe_content.strip().split('\n')
-                    if recipe_lines:
-                        # Enlever les numéros ou puces au début de la ligne pour obtenir le nom pur
-                        recipe_name = recipe_lines[0].strip()
-                        # Enlever le numéro de recette s'il est présent (comme "1. ")
-                        if recipe_name[0].isdigit() and ". " in recipe_name:
-                            recipe_name = recipe_name.split(". ", 1)[1]
-                        
-                        self.console.print(f"\n[green]✓ Recette selectionnée: {recipe_name}[/green]")
-                    else:
-                        # Fallback si on ne peut pas extraire le nom
-                        self.console.print(f"\n[green]✓ Recette {choice_str} selectionnée[/green]")
-                        recipe_name = choice_str
-                else:
-                    # Numéro hors plage, traiter comme un nom de recette directement
-                    self.console.print(f"\n[yellow]Numéro de recette invalide, utilisation comme nom: {choice_str}[/yellow]")
-                    recipe_name = choice_str
-            except ValueError:
-                # Ce n'est pas un numéro, c'est probablement un nom de recette directement
-                recipe_name = choice_str
-                self.console.print(f"\n[green]✓ Recette selectionnée: {recipe_name}[/green]")
+                    recipe_name = recipe_content.get("name", "")
+                    recipe_description = recipe_content.get("description", "")
+                    self.console.print(recipe_name)
+                    self.console.print(recipe_description)
+                
+            
+            except Exception as e:
+                    self.console.print(f"[red]Erreur lors de la sélection de la recette: {e}[/red]")
+                    self.console.print(recipe_content)
+                    self.console.print(self.state_machine.proposed_recipes)
+                    self.console.print(recipe_index)
             
             recipe_data = self.llm_agent.get_recipe_steps(
                 recipe_name,

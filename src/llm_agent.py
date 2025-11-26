@@ -1,7 +1,7 @@
 import os
 from openai import OpenAI
 from typing import Optional
-
+import json
 
 class LLMAgent:
     def __init__(self):
@@ -81,20 +81,54 @@ class LLMAgent:
     def propose_recipes(self, ingredients: list, servings: int = 2, additional_request: str = None) -> str:
         ingredients_str = ", ".join(ingredients)
         system_prompt = """Tu es un chef de cuisine d'un grand restaurant excellent en cuisine et en recettes. À partir des ingrédients fournis, 
-        suggère 4 recettes différentes, delicieuses et qui donnent envie. N'hésites pas à utiliser les recettes de marmitton ou autres sites populaires de recettes. 
-        Pour chaque recette, indique :
-        1. Nom de la recette, comme si on était dans un restaurant étoilé, penses à un nom qui donne envie et qui est unique. Si c'est une recette d'un pays particulier, utilises le nom original de cette recette dans son pays d'origine.
-        Par exemple: au lieu de dire **Riz sauté aux œufs et tomates** tu vas dire **Fanqie Chao Fan - Riz sauté aux œufs et tomates**
-        2. Brief description
-        3. Difficulty level (Easy/Medium/Hard)
-        The first recipe should use all of the ingredients provided. 
-        The other recipes could be gradually more flexible, but must be delicious and use at least some of the ingredients provided. They could also could also incorporate some additional but very common ingredients.
-        Also try to make sure that the reciepies you propose have some variety in terms of geographic origin, like french, italian, japanese, etc.  At least one of the recipes should be non european.
-        Try to think about what region in the country the recipe is from, because different regions also introduce variety in terms of ingredients and cooking techniques. You can tell a bit about the region in the description of the recipe.
-        The recipes should be in French.
+suggère 4 recettes différentes, délicieuses et qui donnent envie. N'hésite pas à utiliser les recettes de Marmiton ou d'autres sites populaires de recettes. 
+Pour chaque recette, indique :
+1. Nom de la recette, comme si on était dans un restaurant étoilé, pense à un nom qui donne envie et qui est unique. Si c'est une recette d'un pays particulier, utilise le nom original de cette recette dans son pays d'origine.
+   Par exemple : au lieu de dire **Riz sauté aux œufs et tomates** tu vas dire **Fanqie Chao Fan - Riz sauté aux œufs et tomates** ; évidemment pas besoin d'ajouter un nom original si celui‑ci n'existe pas.
+2. Une brève description appétissante.
+3. Un niveau de difficulté (Facile / Moyen / Difficile).
+
+La première recette doit utiliser tous les ingrédients fournis.
+Les autres recettes peuvent être un peu plus flexibles, mais doivent rester délicieuses et utiliser au moins certains des ingrédients fournis, avec éventuellement quelques ingrédients très courants.
+Assure‑toi de proposer des recettes variées géographiquement (française, italienne, japonaise, etc.) avec au moins une recette non européenne.
+Les recettes doivent être en français.
+"""
         
-        Format your response as a numbered list."""
-        
+        # Ask the model to return a structured list of recipes
+        recipe_proposal_function = [{
+            "name": "propose_recipes",
+            "description": "Propose 4 recipes based on available ingredients.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "recipes": {
+                        "type": "array",
+                        "description": "List of proposed recipes.",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "Le nom de la recette."
+                                },
+                                "description": {
+                                    "type": "string",
+                                    "description": "Une brève description appétissante de la recette."
+                                },
+                                "difficulty": {
+                                    "type": "string",
+                                    "description": "Niveau de difficulté de la recette.",
+                                    "enum": ["Facile", "Moyen", "Difficile"]
+                                }
+                            },
+                            "required": ["name", "description", "difficulty"]
+                        }
+                    }
+                },
+                "required": ["recipes"]
+            }
+        }]
+        # IMPORTANT: You will exclude the following ingredients from the reciepe: meat, ognions. Also, I don't have an oven so you will exclude recipes that require an oven 
         long_term_memory = "You will exclude the following ingredients from the reciepe: meat, ognions. Also, I don't have an oven so you will exclude recipes that require an oven "
         user_prompt = f"I have these ingredients: {ingredients_str}. I'm cooking for {servings} people."
         
@@ -105,7 +139,14 @@ class LLMAgent:
         else:
             user_prompt += " What recipes can I make?"
         
-        return self.get_response(user_prompt, system_prompt)
+        response = self.get_response(user_prompt, system_prompt, functions=recipe_proposal_function)
+        try:
+            decoded_response = json.loads(response)
+            return decoded_response
+        except json.JSONDecodeError:
+            # Fallback to text parsing if JSON parsing fails
+            print(f"Error decoding JSON response: {response}")
+            return {"recipes": []}
 
     def explain_ingredients_naturally(self, ingredients: list, recipe_name: str, recipe_steps: list) -> str:
         system_prompt = "You are a helpful cooking assistant. Explain the ingredients I need for a recipe in a natural way that is easy to understand."
@@ -244,7 +285,7 @@ Ces relations de dépendance sont ESSENTIELLES pour générer un diagramme de Ga
         response = self.get_response(user_prompt, system_prompt, functions=recipe_function)
         
         # Parse the JSON response
-        import json
+
         try:
             recipe_data = json.loads(response)
             return recipe_data
