@@ -224,8 +224,7 @@ Commençons!
             else:
                 steps.append(step)
         
-        self.ui.show_steps(steps, current_step=0)
-                
+        # Store steps in state machine (display_cooking_steps will show them when entering COOKING_GUIDANCE)
         self.state_machine.set_recipe_steps(steps)
         self.state_machine.selected_recipe = recipe_data.get("title", recipe_name)
         
