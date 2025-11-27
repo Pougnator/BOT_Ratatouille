@@ -40,12 +40,7 @@ class CookingAssistant:
     def display_welcome(self):
         welcome_text = """
 Hello, je suis Robotatouille!
-
-Je vous aiderai à découvrir de délicieuses recettes basées 
-sur vos ingrédients disponibleset vous guiderai étape par étape 
-tout au long du processus de cuisine.
-
-Commençons!
+Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédients disponibles et vous guiderai étape par étape tout au long du processus de cuisine. Commençons!
 """
         self.ui.show_text(welcome_text)
         
@@ -66,15 +61,15 @@ Commençons!
                 else:
                     self.ui.show_error("Veuillez entrer un nombre positif.")
                     # Ask again
-                    self.ui.ask_text("Nombre de personnes", handle_servings_input, default="2")
+                    self.ui.ask_text("Nombre de personnes: ", handle_servings_input, default="2")
             except ValueError:
                 self.ui.show_error("Veuillez entrer un nombre valide.")
                 # Ask again
-                self.ui.ask_text("Nombre de personnes", handle_servings_input, default="2")
+                self.ui.ask_text("Nombre de personnes: ", handle_servings_input, default="2")
         
-        self.ui.show_text("Pour combien de personnes voulez-vous cuisiner?\n")
+        # self.ui.show_text("Pour combien de personnes voulez-vous cuisiner?\n")
         self._servings_collected = threading.Event()
-        self.ui.ask_text("Nombre de personnes", handle_servings_input, default="2")
+        self.ui.ask_text("Pour combien de personnes voulez-vous cuisiner?", handle_servings_input, default="2")
         
         # Wait for the callback to complete
         while not self._servings_collected.is_set():
@@ -93,10 +88,10 @@ Commençons!
                 # Ask again
                 self.ui.ask_text("Vos ingrédients", handle_ingredients_input)
         
-        self.ui.show_text("Quels ingrédients avez-vous sous la main?\n")
-        self.ui.show_text("Entrez les ingrédients séparés par des virgules (par exemple: oeufs, riz, tomates)\n")
+        self.ui.show_text("Quels ingrédients avez-vous sous la main?")
+        # self.ui.show_text("Entrez les ingrédients séparés par des virgules (par exemple: oeufs, riz, tomates)")
         self._ingredients_collected = threading.Event()
-        self.ui.ask_text("Vos ingrédients", handle_ingredients_input)
+        self.ui.ask_text("Entrez les ingrédients séparés par des virgules (par exemple: oeufs, riz, tomates)", handle_ingredients_input)
         
         # Wait for the callback to complete
         while not self._ingredients_collected.is_set():

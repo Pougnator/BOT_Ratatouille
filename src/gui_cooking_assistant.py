@@ -30,16 +30,28 @@ class GUICookingAssistant(CookingUI):
     """GUI implementation of CookingUI interface"""
     def __init__(self, root):
         self.root = root
-        self.root.title("r0[BOT]t@toui11e")
-        self.root.geometry("800x600")  # Adjusted for 800x600 display
+        self.root.title("Ro[bot]atouille")
+        self.root.geometry("1024x600")  # Match HTML design dimensions (7 inch screen)
+        self.root.resizable(False, False)  # Fixed size for 7 inch screen
         
         # Try to detect if we're on a small screen and go fullscreen if needed
-        if root.winfo_screenwidth() <= 800:
+        if root.winfo_screenwidth() <= 1024:
             root.attributes('-fullscreen', True)
             
-        # You cannot set a ttk style for the Toplevel/root window itself; use configure for bg color.
-        # For a "black style" look, set root bg to black here (other ttk widgets can get styled separately).
-        self.root.configure(bg="black")
+        # Colors from HTML design
+        self.bg_color = "#212121"  # Background
+        self.surface_color = "#2f2f2f"  # Surface (input, user messages)
+        self.text_color = "#ececec"  # Text
+        self.primary_color = "#19c37d"  # Primary action (send button)
+        self.secondary_color = "#8e8ea0"  # Secondary
+        self.border_color = "#3d3d3d"  # Borders
+        
+        self.root.configure(bg=self.bg_color)
+        
+        # Input border colors
+        self.input_border_default = "#565869"
+        self.input_border_active = self.primary_color
+        self.current_input_border_color = self.input_border_default
         
         
         # Command history
@@ -63,175 +75,379 @@ class GUICookingAssistant(CookingUI):
         self.start_cooking_assistant()
 
     def _setup_gui(self):
-        # SIMPLEST APPROACH: Just use one PanedWindow with fixed sash position
+        # Main horizontal container (like app-container in HTML)
+        self.main_container = tk.Frame(self.root, bg=self.bg_color)
+        self.main_container.pack(fill="both", expand=True)
         
-        # Go back to using tk.PanedWindow which has better direct position control
-        self.main_pane = tk.PanedWindow(self.root, orient=tk.VERTICAL, 
-                                       bg="black", sashwidth=4, sashrelief=tk.RAISED)
-        self.main_pane.pack(fill="both", expand=True, padx=5, pady=5)
+        # Setup chat container (left side, flex: 1)
+        self._setup_chat_container()
         
-        # Create top frame for console
-        self.top_pane = tk.Frame(self.main_pane, bg="black")
+        # Setup ingredients sidebar (right side, 320px)
+        self._setup_ingredients_sidebar()
         
-        # Create bottom frame for ingredients and gantt
-        self.bottom_container = tk.Frame(self.main_pane, bg="black")
+    def _setup_chat_container(self):
+        """Setup the main chat container (left side)"""
+        # Main chat container (flex: 1)
+        self.chat_container = tk.Frame(self.main_container, bg=self.bg_color)
+        self.chat_container.pack(side=tk.LEFT, fill="both", expand=True)
+        self.chat_container.pack_propagate(False)
         
-        # We'll add the frames with weights at the end of _setup_gui
+        # Chat header (fixed height)
+        self.chat_header = tk.Frame(
+            self.chat_container,
+            bg=self.bg_color,
+            height=60,
+            highlightbackground=self.border_color,
+            highlightthickness=1
+        )
+        self.chat_header.pack(fill="x")
+        self.chat_header.pack_propagate(False)
         
-        # Setup the console
-        self._setup_console_pane()
+        self.chat_title = tk.Label(
+            self.chat_header,
+            text="Chat",
+            font=("Open Sans", 14, "normal"),
+            fg=self.text_color,
+            bg=self.bg_color
+        )
+        self.chat_title.pack(expand=True)
         
-        # Create horizontal split for bottom section - switch back to ttk.PanedWindow which supports weight
-        self.bottom_pane = ttk.PanedWindow(self.bottom_container, orient=tk.HORIZONTAL)
-        self.bottom_pane.pack(fill="both", expand=True)
+        # Chat messages area (scrollable)
+        self.chat_messages_frame = tk.Frame(self.chat_container, bg=self.bg_color)
+        self.chat_messages_frame.pack(fill="both", expand=True)
         
-        # Setup ingredients and gantt areas
-        self._setup_bottom_pane()
+        # Use Canvas + Frame for scrolling messages
+        self.chat_canvas = tk.Canvas(
+            self.chat_messages_frame,
+            bg=self.bg_color,
+            highlightthickness=0,
+            borderwidth=0
+        )
+        self.chat_scrollbar = tk.Scrollbar(
+            self.chat_messages_frame,
+            orient="vertical",
+            command=self.chat_canvas.yview
+        )
+        self.chat_messages_content = tk.Frame(self.chat_canvas, bg=self.bg_color)
         
-        # First add the panes without weights
-        self.main_pane.add(self.top_pane)
-        self.main_pane.add(self.bottom_container)
+        self.chat_canvas.configure(yscrollcommand=self.chat_scrollbar.set)
+        self.chat_canvas.pack(side=tk.LEFT, fill="both", expand=True)
+        self.chat_scrollbar.pack(side=tk.RIGHT, fill="y")
         
-        # Then force the sash position after a small delay to ensure the window is fully created
-        def set_position():
-            # Get the window height
-            window_height = self.root.winfo_height()
-            if window_height > 100:  # Make sure window is properly sized
-                # Set the position at 60% of window height (as per your adjustment)
-                sash_pos = int(window_height * 0.7)
-                
-                # For tk.PanedWindow, use the correct method
-                self.main_pane.update()
-                self.main_pane.sash_place(0, 0, sash_pos)
-        
-        # Call after a delay
-        self.root.update()
-        self.root.after(200, set_position)  # Increased delay for better reliability
-        
-    def _setup_console_pane(self):
-        # Simplest approach - direct setup without nested frames
-        
-        # Use a container frame for both output and input
-        self.console_container = tk.Frame(self.top_pane, bg="black")
-        self.console_container.pack(fill="both", expand=True)
-        
-        # Set grid layout to ensure input is always visible
-        self.console_container.grid_rowconfigure(0, weight=1)  # Output expands
-        self.console_container.grid_rowconfigure(1, weight=0, minsize=40)  # Input has minimum height
-        self.console_container.grid_columnconfigure(0, weight=1)
-        
-        # Console output area - now in the container
-        self.console_output = scrolledtext.ScrolledText(
-            self.console_container, 
-            wrap=tk.WORD, 
-            font=("Consolas", 11),
-            bg="black", 
-            fg="lime",
-            insertbackground="green"
+        self.chat_canvas_window = self.chat_canvas.create_window(
+            (0, 0),
+            window=self.chat_messages_content,
+            anchor="nw"
         )
         
-        # Place in the first row with grid instead of pack
-        self.console_output.grid(row=0, column=0, sticky="nsew", padx=5, pady=(2, 2))
-        self.console_output.config(state=tk.DISABLED)  # Start disabled
+        self.chat_messages_content.bind("<Configure>", self._on_chat_configure)
+        self.chat_canvas.bind("<Configure>", self._on_canvas_configure)
         
-        # # Setup stdout/stdin redirection
-        # self.console_redirector = ConsoleRedirector(self.console_output, self)
-        
-        # Input area - now in the container with guaranteed space (no border)
-        self.input_frame = tk.Frame(
-            self.console_container, 
-            bg="black",
-            height=30  # Fixed height
+        # Chat input container
+        self.chat_input_container = tk.Frame(
+            self.chat_container,
+            bg=self.bg_color,
+            highlightbackground=self.border_color,
+            highlightthickness=1
         )
-        # Place in second row with grid - this ensures it's always visible
-        self.input_frame.grid(row=1, column=0, sticky="ew", padx=5, pady=5)
-        self.input_frame.grid_propagate(False)  # Prevent shrinking
-
-        # For improved layout control, use grid inside the input frame
-        self.input_frame.grid_columnconfigure(1, weight=1)  # Entry expands
+        self.chat_input_container.pack(fill="x", side=tk.BOTTOM)
         
-        # Prompt label - use standard tk widgets for direct styling
-        self.prompt_label = tk.Label(
-            self.input_frame, 
-            text="> ", 
-            font=("Consolas", 14, "bold"),
-            fg="lime",
-            bg="black"
+        # Canvas for rounded input background
+        self.input_canvas = tk.Canvas(
+            self.chat_input_container,
+            bg=self.bg_color,
+            highlightthickness=0,
+            height=64
         )
-        self.prompt_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        self.input_canvas.pack(fill="x", padx=20, pady=16)  # Match HTML padding
+        self.input_canvas.bind("<Configure>", self._on_input_canvas_configure)
         
-        # Input waiting indicator - use standard tk widgets
-        self.input_indicator = tk.Label(
-            self.input_frame,
-            text="[Input required]",
-            font=("Consolas", 11),
-            fg="lime",
-            bg="black"
+        # Wrapper that will sit inside the rounded background
+        self.input_wrapper = tk.Frame(
+            self.input_canvas,
+            bg=self.surface_color
         )
-        # Will be placed when needed using grid at column 3
+        self.input_wrapper.pack_propagate(False)
+        self.input_window_margin_x = 16
+        self.input_window_margin_y = 8
+        self.input_canvas_window = self.input_canvas.create_window(
+            self.input_window_margin_x,
+            self.input_window_margin_y,
+            anchor="nw",
+            window=self.input_wrapper
+        )
         
-        # Console input - use standard tk Entry for direct styling
+        # Chat input
         self.console_input = tk.Entry(
-            self.input_frame, 
-            font=("Consolas", 11),
-            bg="black",
-            fg="lime",
-            insertbackground="lime"  # Cursor color
+            self.input_wrapper,
+            font=("Open Sans", 12),
+            bg=self.surface_color,
+            fg=self.text_color,
+            insertbackground=self.text_color,
+            borderwidth=0,
+            highlightthickness=0
         )
-        self.console_input.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+        self.console_input.pack(side=tk.LEFT, fill="both", expand=True, padx=14, pady=10)  # Match HTML padding
+        self.console_input.insert(0, "Message Recipe Assistant...")
+        self.console_input.config(fg="#8e8ea0")  # Placeholder color
         
-        # Set up key bindings for input
+        # Bind focus events for placeholder
+        self.console_input.bind("<FocusIn>", self._on_input_focus_in)
+        self.console_input.bind("<FocusOut>", self._on_input_focus_out)
+        
+        # Send button
+        self.send_button = tk.Button(
+            self.input_wrapper,
+            text="Send",
+            font=("Open Sans", 11, "normal"),
+            bg=self.primary_color,
+            fg="#ffffff",
+            activebackground=self.primary_color,
+            activeforeground="#ffffff",
+            borderwidth=0,
+            relief=tk.FLAT,
+            cursor="hand2",
+            command=self.process_command
+        )
+        self.send_button.pack(side=tk.RIGHT, padx=14, pady=10)  # Match HTML padding
+        
+        # Set up key bindings
         self.console_input.bind("<Return>", self.process_command)
         self.console_input.bind("<Up>", self.show_previous_command)
         self.console_input.bind("<Down>", self.show_next_command)
         
-        # # Start button - use standard tk Button with bright colors
-        # self.start_button = tk.Button(
-        #     self.input_frame,
-        #     text="Start Assistant",
-        #     command=self.start_cooking_assistant,
-        #     font=("Consolas", 10, "bold"),
-        #     fg="black",
-        #     bg="lime",
-        #     activebackground="green",
-        #     activeforeground="white"
-        # )
-        # self.start_button.grid(row=0, column=2, padx=5, pady=5, sticky="e")
+        # Store reference to console_output for backward compatibility
+        self.console_output = self.chat_messages_content
         
-        # Focus on the input field
-        self.console_input.focus_set()
+        # Draw initial rounded background
+        self.root.after(50, self._draw_input_background)
+    
+    def _setup_ingredients_sidebar(self):
+        """Setup the ingredients sidebar (right side, 320px)"""
+        # Ingredients sidebar
+        self.ingredients_sidebar = tk.Frame(
+            self.main_container,
+            bg=self.bg_color,
+            width=320
+        )
+        self.ingredients_sidebar.pack(side=tk.RIGHT, fill="y")
+        self.ingredients_sidebar.pack_propagate(False)
         
-    def _setup_bottom_pane(self):
-        # Ingredients list (left)
-        self.ingredients_frame = ttk.Frame(self.bottom_pane)
+        # Ingredients header
+        self.ingredients_header = tk.Frame(
+            self.ingredients_sidebar,
+            bg=self.bg_color,
+            height=60,
+            highlightbackground=self.border_color,
+            highlightthickness=1
+        )
+        self.ingredients_header.pack(fill="x", side=tk.TOP)
+        self.ingredients_header.pack_propagate(False)
         
-        ingredients_label = ttk.Label(self.ingredients_frame, text="Ingredients", font=("Helvetica", 10, "bold"))
-        ingredients_label.pack(padx=5, pady=2)
+        self.ingredients_title = tk.Label(
+            self.ingredients_header,
+            text="Ingredients",
+            font=("Open Sans", 14, "normal"),
+            fg=self.text_color,
+            bg=self.bg_color
+        )
+        self.ingredients_title.pack(anchor="w", padx=20, pady=16)
         
-        self.ingredients_box = tk.Text(self.ingredients_frame, width=30, font=("Courier", 10), bg="black", fg = "white")
-        self.ingredients_box.pack(fill="both", expand=True, padx=5, pady=5)
-        self.ingredients_box.config(state=tk.DISABLED)
+        # Ingredients list (scrollable)
+        self.ingredients_list_frame = tk.Frame(self.ingredients_sidebar, bg=self.bg_color)
+        self.ingredients_list_frame.pack(fill="both", expand=True)
         
-        self.bottom_pane.add(self.ingredients_frame, weight=1)
+        # Use Canvas + Frame for scrolling
+        self.ingredients_canvas = tk.Canvas(
+            self.ingredients_list_frame,
+            bg=self.bg_color,
+            highlightthickness=0,
+            borderwidth=0
+        )
+        self.ingredients_scrollbar = tk.Scrollbar(
+            self.ingredients_list_frame,
+            orient="vertical",
+            command=self.ingredients_canvas.yview
+        )
+        self.ingredients_content = tk.Frame(self.ingredients_canvas, bg=self.bg_color)
         
-        # Gantt chart (right) - simplified placeholder for now
-        self.gantt_frame = ttk.Frame(self.bottom_pane)
+        self.ingredients_canvas.configure(yscrollcommand=self.ingredients_scrollbar.set)
+        self.ingredients_canvas.pack(side=tk.LEFT, fill="both", expand=True)
+        self.ingredients_scrollbar.pack(side=tk.RIGHT, fill="y")
         
-        gantt_label = ttk.Label(self.gantt_frame, text="Recipe Timeline", font=("Helvetica", 12, "bold"))
-        gantt_label.pack(padx=5, pady=5)
+        self.ingredients_canvas_window = self.ingredients_canvas.create_window(
+            (0, 0),
+            window=self.ingredients_content,
+            anchor="nw"
+        )
         
-        self.gantt_box = tk.Text(self.gantt_frame, width=50, bg="black", fg="lime", font=("Courier", 10))
-        self.gantt_box.pack(fill="both", expand=True, padx=5, pady=2)
-        self.gantt_box.insert(tk.END, "Gantt chart will appear here")
-        self.gantt_box.config(state=tk.DISABLED)
+        self.ingredients_content.bind("<Configure>", self._on_ingredients_configure)
+        self.ingredients_canvas.bind("<Configure>", self._on_ingredients_canvas_configure)
         
-        self.bottom_pane.add(self.gantt_frame, weight=2)
+        # Store reference for backward compatibility
+        self.ingredients_box = self.ingredients_content
+    
+    def _on_chat_configure(self, event):
+        """Update scroll region when chat content changes"""
+        self.chat_canvas.configure(scrollregion=self.chat_canvas.bbox("all"))
+        # Auto-scroll to bottom whenever content changes
+        self.chat_canvas.yview_moveto(1.0)
+    
+    def _on_canvas_configure(self, event):
+        """Update canvas window width when canvas is resized"""
+        canvas_width = event.width
+        self.chat_canvas.itemconfig(self.chat_canvas_window, width=canvas_width)
+    
+    def _on_ingredients_configure(self, event):
+        """Update scroll region when ingredients content changes"""
+        self.ingredients_canvas.configure(scrollregion=self.ingredients_canvas.bbox("all"))
+    
+    def _on_ingredients_canvas_configure(self, event):
+        """Update canvas window width when canvas is resized"""
+        canvas_width = event.width
+        self.ingredients_canvas.itemconfig(self.ingredients_canvas_window, width=canvas_width)
+    
+    def _on_input_canvas_configure(self, event):
+        """Update input canvas layout and redraw rounded background"""
+        if not hasattr(self, "input_canvas_window"):
+            return
+        margin_x = getattr(self, "input_window_margin_x", 16)
+        margin_y = getattr(self, "input_window_margin_y", 8)
+        self.input_canvas.coords(self.input_canvas_window, margin_x, margin_y)
+        new_width = max(event.width - 2 * margin_x, 50)
+        new_height = max(event.height - 2 * margin_y, 20)
+        self.input_wrapper.config(width=new_width, height=new_height)
+        self._draw_input_background(self.current_input_border_color)
+    
+    def _draw_input_background(self, border_color=None):
+        """Draw rounded background for the chat input area"""
+        if not hasattr(self, "input_canvas"):
+            return
+        width = self.input_canvas.winfo_width()
+        height = self.input_canvas.winfo_height()
+        if width <= 0 or height <= 0:
+            return
+        
+        color = border_color or self.input_border_default
+        radius = 16
+        self.input_canvas.delete("input_bg")
+        
+        try:
+            from PIL import Image, ImageDraw, ImageTk
+            img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+            draw = ImageDraw.Draw(img)
+            draw.rounded_rectangle(
+                [(0, 0), (width - 1, height - 1)],
+                radius=radius,
+                fill=self.surface_color,
+                outline=color,
+                width=1
+            )
+            photo = ImageTk.PhotoImage(img)
+            self.input_canvas.create_image(0, 0, anchor="nw", image=photo, tags="input_bg")
+            self.input_canvas.image = photo  # Keep reference to prevent garbage collection
+        except ImportError:
+            # Fallback: use regular rectangle if Pillow is not available
+            self.input_canvas.create_rectangle(
+                0, 0, width, height,
+                fill=self.surface_color,
+                outline=color,
+                width=1,
+                tags="input_bg"
+            )
+        
+        # Ensure input frame stays on top of the background
+        if hasattr(self, "input_canvas_window"):
+            self.input_canvas.tag_raise(self.input_canvas_window)
+
+    def _draw_rounded_rect_on_canvas(self, canvas, x1, y1, x2, y2, radius, fill):
+        """Draw a rounded rectangle directly on a canvas"""
+        radius = min(radius, abs(x2 - x1) / 2, abs(y2 - y1) / 2)
+        # Center rectangle
+        canvas.create_rectangle(
+            x1 + radius,
+            y1,
+            x2 - radius,
+            y2,
+            fill=fill,
+            outline=""
+        )
+        canvas.create_rectangle(
+            x1,
+            y1 + radius,
+            x2,
+            y2 - radius,
+            fill=fill,
+            outline=""
+        )
+        # Corners
+        canvas.create_arc(
+            x1,
+            y1,
+            x1 + 2 * radius,
+            y1 + 2 * radius,
+            start=90,
+            extent=90,
+            style="pieslice",
+            fill=fill,
+            outline=""
+        )
+        canvas.create_arc(
+            x2 - 2 * radius,
+            y1,
+            x2,
+            y1 + 2 * radius,
+            start=0,
+            extent=90,
+            style="pieslice",
+            fill=fill,
+            outline=""
+        )
+        canvas.create_arc(
+            x2 - 2 * radius,
+            y2 - 2 * radius,
+            x2,
+            y2,
+            start=270,
+            extent=90,
+            style="pieslice",
+            fill=fill,
+            outline=""
+        )
+        canvas.create_arc(
+            x1,
+            y2 - 2 * radius,
+            x1 + 2 * radius,
+            y2,
+            start=180,
+            extent=90,
+            style="pieslice",
+            fill=fill,
+            outline=""
+        )
+    
+    def _on_input_focus_in(self, event):
+        """Handle input focus in - remove placeholder"""
+        if self.console_input.get() == "Message Recipe Assistant...":
+            self.console_input.delete(0, tk.END)
+            self.console_input.config(fg=self.text_color)
+    
+    def _on_input_focus_out(self, event):
+        """Handle input focus out - show placeholder if empty"""
+        if not self.console_input.get():
+            self.console_input.insert(0, "Message Recipe Assistant...")
+            self.console_input.config(fg="#8e8ea0")
+        
     
    
     
     def clear_console(self):
-        """Clear the console output"""
-        self.console_output.delete(1.0, tk.END)
+        """Clear the chat messages"""
+        for widget in self.chat_messages_content.winfo_children():
+            widget.destroy()
+        # After clearing, ensure the view is reset to the top
+        self.chat_canvas.yview_moveto(0)
+
     
     def restart(self):
         """Restart the cooking assistant - clear everything and reset to STARTING state"""
@@ -249,22 +465,14 @@ class GUICookingAssistant(CookingUI):
         self.cooking_assistant = None
         self.assistant_thread = None
         
-        # Clear console - force update
-        self.console_output.config(state=tk.NORMAL)
-        self.console_output.delete(1.0, tk.END)
-        self.console_output.config(state=tk.DISABLED)
+        # Clear chat messages
+        self.clear_console()
         self.root.update_idletasks()  # Force UI update
         
         # Clear ingredients panel
-        self.ingredients_box.config(state=tk.NORMAL)
-        self.ingredients_box.delete(1.0, tk.END)
-        self.ingredients_box.config(state=tk.DISABLED)
+        self.set_ingredients("")
         
-        # Clear Gantt chart panel
-        self.gantt_box.config(state=tk.NORMAL)
-        self.gantt_box.delete(1.0, tk.END)
-        self.gantt_box.insert(tk.END, "Gantt chart will appear here")
-        self.gantt_box.config(state=tk.DISABLED)
+        # Gantt chart is no longer in the UI (removed for chat layout)
         
         # Show welcome message
         self.display_welcome()
@@ -292,34 +500,63 @@ class GUICookingAssistant(CookingUI):
             
     def update_ingredients(self, ingredients_text):
         """Update the ingredients panel with provided text"""
-        self.ingredients_box.config(state=tk.NORMAL)
-        self.ingredients_box.delete(1.0, tk.END)
-        self.ingredients_box.insert(tk.END, ingredients_text)
-        self.ingredients_box.config(state=tk.DISABLED)
+        self.set_ingredients(ingredients_text)
     
     def set_ingredients(self, ingredients_text):
-        self.ingredients_box.config(state=tk.NORMAL)
-        self.ingredients_box.delete(1.0, tk.END)
-        self.ingredients_box.insert(tk.END, ingredients_text)
-        self.ingredients_box.config(state=tk.DISABLED)
+        """Update ingredients in the sidebar"""
+        # Clear existing ingredients
+        for widget in self.ingredients_content.winfo_children():
+            widget.destroy()
+        
+        # Parse ingredients text and add as items
+        lines = ingredients_text.strip().split('\n')
+        for line in lines:
+            line = line.strip()
+            if line and (line.startswith('•') or line.startswith('-') or line.startswith('*')):
+                # Remove bullet point
+                ingredient_text = line.lstrip('•-* ').strip()
+                if ingredient_text:
+                    ingredient_item = tk.Label(
+                        self.ingredients_content,
+                        text=ingredient_text,
+                        font=("Open Sans", 11),  # Reduced from 13
+                        fg="#c5c5d2",
+                        bg=self.bg_color,
+                        anchor="w",
+                        padx=32,  # Space for bullet
+                        pady=2  # Reduced from 5
+                    )
+                    ingredient_item.pack(fill="x", padx=20)
+                    # # Add bullet point manually
+                    # bullet = tk.Label(
+                    #     self.ingredients_content,
+                    #     text="-",
+                    #     font=("Open Sans", 11),  # Reduced from 13
+                    #     fg="#8e8ea0",
+                    #     bg=self.bg_color
+                    # )
+                    # bullet.place(in_=ingredient_item, x=20, y=0, anchor="w")
+        
+        # Update scroll region
+        self.root.after(10, lambda: self.ingredients_canvas.configure(
+            scrollregion=self.ingredients_canvas.bbox("all")
+        ))
     
     def set_gantt(self, gantt_text):
-        self.gantt_box.config(state=tk.NORMAL)
-        self.gantt_box.delete(1.0, tk.END)
-        self.gantt_box.insert(tk.END, gantt_text)
-        self.gantt_box.config(state=tk.DISABLED)
+        """Gantt chart display removed in chat layout"""
+        pass
         
     # We'll implement file monitoring later
     
     def display_welcome(self):
-        """Display welcome message in the console"""
-        welcome_message = """
-   =========================================
-   |||r0[BOT]t@toui11e v0.000000000000010|||
-   =========================================
-   |||     Type 'start' or get lost      |||
-   =========================================
-"""
+        """Display welcome message in the chat"""
+        welcome_message = """ 
+        =========================================
+        |||r0[BOT]t@toui11e v0.000000000000011|||
+        =========================================
+        |||     Go delicous or get lost      |||
+        =========================================
+   """
         print(welcome_message)
         
     def start_cooking_assistant(self):
@@ -398,12 +635,106 @@ class GUICookingAssistant(CookingUI):
     
     # ========== CookingUI Interface Implementation ==========
     
+    def _add_chat_message(self, text: str, is_user: bool = False):
+        """Add a message to the chat (assistant or user style)"""
+        # Message row container - reduced padding
+        message_row = tk.Frame(
+            self.chat_messages_content,
+            bg=self.bg_color,
+            padx=20,
+            pady=8  # Reduced from 20
+        )
+        message_row.pack(fill="x")
+        
+        # Message content container (centered, max-width 700px equivalent)
+        message_content = tk.Frame(message_row, bg=self.bg_color)
+        if is_user:
+            message_content.pack(side=tk.RIGHT, anchor="e")
+        else:
+            message_content.pack(side=tk.LEFT, anchor="w")
+        
+        # Message text
+        if is_user:
+            # User message: rounded background using canvas drawing
+            bubble_canvas = tk.Canvas(
+                message_content,
+                bg=self.bg_color,
+                highlightthickness=0,
+                borderwidth=0
+            )
+            bubble_canvas.pack(side=tk.LEFT)
+            
+            padding_x = 16
+            padding_y = 10
+            max_width = 400
+            
+            text_item = bubble_canvas.create_text(
+                padding_x,
+                padding_y,
+                text=text,
+                font=("Open Sans", 12),
+                fill=self.text_color,
+                anchor="nw",
+                width=max_width
+            )
+            
+            bubble_canvas.update_idletasks()
+            bbox = bubble_canvas.bbox(text_item)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+            width = text_width + padding_x * 2
+            height = text_height + padding_y * 2
+            
+            bubble_canvas.config(width=width, height=height)
+            
+            self._draw_rounded_rect_on_canvas(
+                bubble_canvas,
+                0,
+                0,
+                width,
+                height,
+                radius=14,
+                fill=self.surface_color
+            )
+            
+            bubble_canvas.tag_raise(text_item)
+            
+        else:
+            # Assistant message: plain text
+            message_text = tk.Label(
+                message_content,
+                text=text,
+                font=("Open Sans", 12),  # Reduced from 14
+                fg=self.text_color,
+                bg=self.bg_color,
+                wraplength=600,  # Reduced from 700
+                justify=tk.LEFT
+            )
+            message_text.pack()
+        
+        # Refresh UI and scroll to bottom
+        self.root.update_idletasks()
+        self.chat_canvas.yview_moveto(1.0)
+    
     def show_text(self, text: str):
-        """Display text in the console/output area"""
-        self.console_output.config(state=tk.NORMAL)
-        self.console_output.insert(tk.END, text)
-        self.console_output.see(tk.END)
-        self.console_output.config(state=tk.DISABLED)
+        """Display text in the chat as assistant message"""
+        if not text:
+            return
+        
+        def render():
+            cleaned = text.strip()
+            if not cleaned:
+                return
+            lines = cleaned.split('\n')
+            for line in lines:
+                line = line.strip()
+                if line:
+                    self._add_chat_message(line, is_user=False)
+        
+        if threading.current_thread() is threading.main_thread():
+            render()
+        else:
+            self.root.after(0, render)
     
     def ask_text(self, prompt: str, callback: Callable[[str], None], default: Optional[str] = None):
         """Ask the user for text input - callback-based approach"""
@@ -481,7 +812,7 @@ class GUICookingAssistant(CookingUI):
     
     def show_success(self, message: str):
         """Display a success message"""
-        self.show_text(f"\n✓ {message}\n")
+        self.show_text(f"\n✓ {message}")
     
     # ========== Helper Methods ==========
     
@@ -491,21 +822,18 @@ class GUICookingAssistant(CookingUI):
         
     def show_input_prompt(self):
         """Show visual indicator that input is required"""
-        self.input_indicator.grid(row=0, column=3, padx=5, pady=5)
-        self.prompt_label.config(fg="orange", text=">> ")
-        self.console_input.config(fg="orange")
         self.console_input.focus_set()
-        
+    
     def hide_input_prompt(self):
         """Hide input required indicator"""
-        self.input_indicator.grid_forget()
-        self.prompt_label.config(fg="lime", text="> ")
-        self.console_input.config(fg="lime")
+        # Nothing to do for now, kept for backward compatibility
+        return
     
     def process_command(self, event=None):
         """Process the command entered in the console input"""
         command = self.console_input.get().strip()
-        if not command:
+        # Ignore placeholder text
+        if not command or command == "Message Recipe Assistant...":
             return
         
         # Add to history
@@ -515,13 +843,13 @@ class GUICookingAssistant(CookingUI):
         # Clear input field
         self.console_input.delete(0, tk.END)
         
+        # Display user message in chat (always show user input)
+        self._add_chat_message(command, is_user=True)
+        
         # Check if we have a callback waiting (from ask_text)
         if self.current_callback:
             # Hide the input prompt
             self.hide_input_prompt()
-            
-            # Echo the command
-            self.show_text(f"> {command}\n")
             
             # Call the callback with the user's input
             callback = self.current_callback
@@ -534,7 +862,6 @@ class GUICookingAssistant(CookingUI):
             return
         
         # Otherwise, handle as a regular command
-        self.print_to_console(f"> {command}")
         
         # Process command
         if command.lower() == "help":
