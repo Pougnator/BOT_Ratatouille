@@ -123,9 +123,13 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
         
     async def confirm_recipe(self):
         """Confirm recipe selection - async version using UI callbacks"""
-        self.ui.show_text("\nQuel recette voulez-vous cuisiner?\n")
-        self.ui.show_text("Entrez le numéro de la recette (1-4) ou le nom de la recette:\n")
-        self.ui.show_text("Entrez 0 + instructions additionnelles pour demander plus de recettes\n")
+        txt_confirm_recipe = """
+        Quel recette voulez-vous cuisiner? 
+        Entrez le numéro de la recette (1-4). Entrez 0 + instructions additionnelles pour demander plus de recettes
+        """
+        # self.ui.show_text("\nQuel recette voulez-vous cuisiner?\n")
+        # self.ui.show_text("Entrez le numéro de la recette (1-4) ou le nom de la recette:\n")
+        # self.ui.show_text("Entrez 0 + instructions additionnelles pour demander plus de recettes\n")
         
         # Store the result from processing the choice
         self._recipe_choice_result = False
@@ -135,7 +139,7 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
             self._recipe_confirmed.set()
         
         self._recipe_confirmed = threading.Event()
-        self.ui.ask_text("Votre choix", handle_recipe_choice)
+        self.ui.ask_text(txt_confirm_recipe, handle_recipe_choice)
         
         # Wait for the callback to complete
         while not self._recipe_confirmed.is_set():
@@ -292,7 +296,7 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
         
         # If on Raspberry Pi, display button controls guide
         if self.hardware.is_raspi:
-            self.ui.show_text(
+            print(
                 "\nContrôles physiques:\n"
                 "- Bouton sur GPIO 6: Next (passer à l'étape suivante)\n"
                 "- Bouton sur GPIO 19: Help (obtenir de l'aide)\n"
@@ -333,7 +337,7 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
         
         # Start polling the buttons
         self.hardware.start_polling()
-        self.ui.show_text("✓ Button controls initialized\n")
+        print("✓ Button controls initialized\n")
     
     def _button_next(self):
         """Handler for the 'Next' button (GPIO 6)"""

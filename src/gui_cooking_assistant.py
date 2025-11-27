@@ -112,8 +112,13 @@ class GUICookingAssistant(CookingUI):
         )
         self.chat_title.pack(expand=True)
         
-        # Chat messages area (scrollable)
-        self.chat_messages_frame = tk.Frame(self.chat_container, bg=self.bg_color)
+        # Chat messages area (scrollable) with visible right border
+        self.chat_messages_frame = tk.Frame(
+            self.chat_container,
+            bg=self.bg_color,
+            highlightbackground=self.border_color,
+            highlightthickness=1
+        )
         self.chat_messages_frame.pack(fill="both", expand=True)
         
         # Use Canvas + Frame for scrolling messages
@@ -126,13 +131,20 @@ class GUICookingAssistant(CookingUI):
         self.chat_scrollbar = tk.Scrollbar(
             self.chat_messages_frame,
             orient="vertical",
-            command=self.chat_canvas.yview
+            command=self.chat_canvas.yview,
+            width=32,
+            bg="#141414",  # Darker background for scrollbar
+            activebackground=self.surface_color,
+            troughcolor="#141414",  # Dark track background
+            highlightthickness=0,
+            borderwidth=0
         )
         self.chat_messages_content = tk.Frame(self.chat_canvas, bg=self.bg_color)
         
         self.chat_canvas.configure(yscrollcommand=self.chat_scrollbar.set)
         self.chat_canvas.pack(side=tk.LEFT, fill="both", expand=True)
-        self.chat_scrollbar.pack(side=tk.RIGHT, fill="y")
+        # Don't pack scrollbar initially - will show when needed
+        self.chat_scrollbar.pack_forget()
         
         self.chat_canvas_window = self.chat_canvas.create_window(
             (0, 0),
@@ -267,13 +279,20 @@ class GUICookingAssistant(CookingUI):
         self.ingredients_scrollbar = tk.Scrollbar(
             self.ingredients_list_frame,
             orient="vertical",
-            command=self.ingredients_canvas.yview
+            command=self.ingredients_canvas.yview,
+            width=32,
+            bg="#141414",  # Darker background for scrollbar
+            activebackground=self.surface_color,
+            troughcolor="black",  # Dark track background
+            highlightthickness=0,
+            borderwidth=0
         )
         self.ingredients_content = tk.Frame(self.ingredients_canvas, bg=self.bg_color)
         
         self.ingredients_canvas.configure(yscrollcommand=self.ingredients_scrollbar.set)
         self.ingredients_canvas.pack(side=tk.LEFT, fill="both", expand=True)
-        self.ingredients_scrollbar.pack(side=tk.RIGHT, fill="y")
+        # Don't pack scrollbar initially - will show when needed
+        self.ingredients_scrollbar.pack_forget()
         
         self.ingredients_canvas_window = self.ingredients_canvas.create_window(
             (0, 0),
@@ -290,6 +309,22 @@ class GUICookingAssistant(CookingUI):
     def _on_chat_configure(self, event):
         """Update scroll region when chat content changes"""
         self.chat_canvas.configure(scrollregion=self.chat_canvas.bbox("all"))
+        
+        # Check if scrolling is needed
+        bbox = self.chat_canvas.bbox("all")
+        if bbox:
+            content_height = bbox[3] - bbox[1]
+            canvas_height = self.chat_canvas.winfo_height()
+            
+            if content_height > canvas_height:
+                # Show scrollbar if not already visible
+                if not self.chat_scrollbar.winfo_viewable():
+                    self.chat_scrollbar.pack(side=tk.RIGHT, fill="y")
+            else:
+                # Hide scrollbar if content fits
+                if self.chat_scrollbar.winfo_viewable():
+                    self.chat_scrollbar.pack_forget()
+        
         # Auto-scroll to bottom whenever content changes
         self.chat_canvas.yview_moveto(1.0)
     
@@ -301,6 +336,21 @@ class GUICookingAssistant(CookingUI):
     def _on_ingredients_configure(self, event):
         """Update scroll region when ingredients content changes"""
         self.ingredients_canvas.configure(scrollregion=self.ingredients_canvas.bbox("all"))
+        
+        # Check if scrolling is needed
+        bbox = self.ingredients_canvas.bbox("all")
+        if bbox:
+            content_height = bbox[3] - bbox[1]
+            canvas_height = self.ingredients_canvas.winfo_height()
+            
+            if content_height > canvas_height:
+                # Show scrollbar if not already visible
+                if not self.ingredients_scrollbar.winfo_viewable():
+                    self.ingredients_scrollbar.pack(side=tk.RIGHT, fill="y")
+            else:
+                # Hide scrollbar if content fits
+                if self.ingredients_scrollbar.winfo_viewable():
+                    self.ingredients_scrollbar.pack_forget()
     
     def _on_ingredients_canvas_configure(self, event):
         """Update canvas window width when canvas is resized"""
@@ -642,7 +692,7 @@ class GUICookingAssistant(CookingUI):
             self.chat_messages_content,
             bg=self.bg_color,
             padx=20,
-            pady=8  # Reduced from 20
+            pady=2  # Reduced for tighter line spacing after \n
         )
         message_row.pack(fill="x")
         
@@ -756,7 +806,7 @@ class GUICookingAssistant(CookingUI):
     
     def show_recipes(self, recipes: List[Dict[str, str]]):
         """Display a list of proposed recipes"""
-        self.show_text("\n📖 Choix des recettes:\n\n")
+        self.show_text("Voici quelques delicieuses recettes que je peux vous proposer:\n")
         for idx, recipe in enumerate(recipes, start=1):
             name = recipe.get("name", f"Recette {idx}")
             difficulty = recipe.get("difficulty", "")
