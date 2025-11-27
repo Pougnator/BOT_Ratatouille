@@ -267,7 +267,7 @@ class GUICookingAssistant(CookingUI):
         
         # Ingredients list (scrollable)
         self.ingredients_list_frame = tk.Frame(self.ingredients_sidebar, bg=self.bg_color)
-        self.ingredients_list_frame.pack(fill="both", expand=True)
+        self.ingredients_list_frame.pack(fill="both", expand=True, before=None)
         
         # Use Canvas + Frame for scrolling
         self.ingredients_canvas = tk.Canvas(
@@ -310,8 +310,9 @@ class GUICookingAssistant(CookingUI):
             highlightbackground=self.border_color,
             highlightthickness=1
         )
+        # Track visibility state
+        self.numeric_keyboard_visible = False
         # Don't pack initially - will show when needed
-        self.numeric_panel.pack_forget()
         
         # Create numeric keyboard rows
         self._setup_numeric_keyboard()
@@ -325,14 +326,23 @@ class GUICookingAssistant(CookingUI):
         panel_container = tk.Frame(self.numeric_panel, bg=self.bg_color)
         panel_container.pack(fill="both", expand=True, padx=20, pady=16)
         
+        # Calculate exact button width: (320px sidebar - 40px padding - 20px gaps) / 3 = ~87px
+        # Force exact width for all buttons
+        button_width = 80  # Fixed width in pixels
+        
         # First row: 1, 2, 3
         row1 = tk.Frame(panel_container, bg=self.bg_color)
         row1.pack(fill="x", pady=(0, 10))
         
         buttons_row1 = ["1", "2", "3"]
         for idx, num in enumerate(buttons_row1):
+            # Create a fixed-width frame to contain the button
+            btn_frame = tk.Frame(row1, width=button_width, height=60, bg=self.bg_color)
+            btn_frame.pack_propagate(False)  # Prevent frame from shrinking
+            btn_frame.grid(row=0, column=idx, padx=(0, 10) if idx < len(buttons_row1) - 1 else (0, 0), sticky="nsew")
+            
             btn = tk.Button(
-                row1,
+                btn_frame,
                 text=num,
                 font=("Open Sans", 18, "normal"),
                 bg=self.surface_color,
@@ -348,11 +358,9 @@ class GUICookingAssistant(CookingUI):
                 padx=16,
                 pady=16
             )
-            # Use grid for equal sizing
-            btn.grid(row=0, column=idx, sticky="nsew", padx=(0, 10) if idx < len(buttons_row1) - 1 else (0, 0))
-            row1.grid_columnconfigure(idx, weight=1, uniform="num_btn")
+            btn.pack(fill="both", expand=True)
         
-        row1.grid_rowconfigure(0, weight=1)
+        row1.grid_rowconfigure(0, minsize=60)
         
         # Second row: 4, 5, ...
         row2 = tk.Frame(panel_container, bg=self.bg_color)
@@ -360,8 +368,13 @@ class GUICookingAssistant(CookingUI):
         
         buttons_row2 = ["4", "5", ".."]
         for idx, num in enumerate(buttons_row2):
+            # Create a fixed-width frame to contain the button
+            btn_frame = tk.Frame(row2, width=button_width, height=60, bg=self.bg_color)
+            btn_frame.pack_propagate(False)  # Prevent frame from shrinking
+            btn_frame.grid(row=0, column=idx, padx=(0, 10) if idx < len(buttons_row2) - 1 else (0, 0), sticky="nsew")
+            
             btn = tk.Button(
-                row2,
+                btn_frame,
                 text=num,
                 font=("Open Sans", 18, "normal"),
                 bg=self.surface_color,
@@ -377,35 +390,37 @@ class GUICookingAssistant(CookingUI):
                 padx=16,
                 pady=16
             )
-            # Use grid for equal sizing
-            btn.grid(row=0, column=idx, sticky="nsew", padx=(0, 10) if idx < len(buttons_row2) - 1 else (0, 0))
-            row2.grid_columnconfigure(idx, weight=1, uniform="num_btn")
+            btn.pack(fill="both", expand=True)
         
-        row2.grid_rowconfigure(0, weight=1)
+        row2.grid_rowconfigure(0, minsize=60)
     
     def _on_numeric_button_click(self, value: str):
-        """Handle numeric button click - insert value into input field"""
-        current_text = self.console_input.get()
-        # Remove placeholder if present
-        if current_text == "Message Recipe Assistant...":
-            self.console_input.delete(0, tk.END)
-            self.console_input.config(fg=self.text_color)
-            current_text = ""
+        """Handle numeric button click - set value and auto-submit"""
+        # Clear input and set the clicked value
+        self.console_input.delete(0, tk.END)
+        self.console_input.config(fg=self.text_color)
+        self.console_input.insert(0, value)
         
-        # Insert the value
-        cursor_pos = self.console_input.index(tk.INSERT)
-        self.console_input.insert(cursor_pos, value)
-        self.console_input.focus_set()
+        # Clear default value so it's ignored
+        self.current_default = None
+        
+        # Auto-submit the value
+        self.process_command()
     
     def show_numeric_keyboard(self):
         """Show the numeric keyboard panel"""
-        if not self.numeric_panel.winfo_viewable():
+        if not self.numeric_keyboard_visible:
+            # Pack at bottom, after ingredients list
             self.numeric_panel.pack(side=tk.BOTTOM, fill="x", padx=0, pady=0)
+            self.numeric_keyboard_visible = True
+            # Update layout to ensure visibility
+            self.root.update_idletasks()
     
     def hide_numeric_keyboard(self):
         """Hide the numeric keyboard panel"""
-        if self.numeric_panel.winfo_viewable():
+        if self.numeric_keyboard_visible:
             self.numeric_panel.pack_forget()
+            self.numeric_keyboard_visible = False
     
     def _on_chat_configure(self, event):
         """Update scroll region when chat content changes"""
@@ -902,9 +917,17 @@ class GUICookingAssistant(CookingUI):
         self.current_callback = callback
         self.current_default = default
         
-        # Check if this is a numeric question
-        numeric_keywords = ["combien", "nombre", "nombre de", "quantité", "how many", "number"]
-        is_numeric = any(keyword.lower() in prompt.lower() for keyword in numeric_keywords)
+        # Check if we should show numeric keyboard based on state machine state
+        is_numeric = False
+        try:
+            if self.cooking_assistant and hasattr(self.cooking_assistant, 'state_machine'):
+                current_state = self.cooking_assistant.state_machine.current_state
+                is_numeric = (current_state == CookingState.STARTING or 
+                             current_state == CookingState.RECIPE_CONFIRMATION)
+        except Exception as e:
+            # If there's any error accessing state, default to hiding keyboard
+            is_numeric = False
+            print(f"Error checking state for numeric keyboard: {e}")
         
         if is_numeric:
             self.show_numeric_keyboard()
@@ -960,7 +983,7 @@ class GUICookingAssistant(CookingUI):
     
     def show_steps(self, steps: List[str], current_step: int = 0):
         """Display cooking steps"""
-        self.show_text("\n📋 Étapes de préparation:\n\n")
+        self.show_text("Étapes de préparation:\n")
         for idx, step in enumerate(steps, start=1):
             marker = "→" if idx == current_step + 1 else " "
             self.show_text(f"{marker} {idx}. {step}\n")
