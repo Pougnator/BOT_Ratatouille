@@ -1,4 +1,4 @@
-from cgi import print_directory
+# from cgi import print_directory
 from re import L
 import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox
