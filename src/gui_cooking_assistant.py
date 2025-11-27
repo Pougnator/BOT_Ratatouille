@@ -133,7 +133,7 @@ class GUICookingAssistant(CookingUI):
             orient="vertical",
             command=self.chat_canvas.yview,
             width=32,
-            bg="#141414",  # Darker background for scrollbar
+            bg=self.surface_color,  # Darker background for scrollbar
             activebackground=self.surface_color,
             troughcolor="#141414",  # Dark track background
             highlightthickness=0,
@@ -574,7 +574,9 @@ class GUICookingAssistant(CookingUI):
                         bg=self.bg_color,
                         anchor="w",
                         padx=32,  # Space for bullet
-                        pady=2  # Reduced from 5
+                        pady=2,  # Reduced from 5
+                        wraplength=250,  # Force text wrapping for long ingredients (320px sidebar - 70px padding)
+                        justify=tk.LEFT
                     )
                     ingredient_item.pack(fill="x", padx=20)
                     # # Add bullet point manually
