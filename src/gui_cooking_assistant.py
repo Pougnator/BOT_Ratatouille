@@ -303,8 +303,109 @@ class GUICookingAssistant(CookingUI):
         self.ingredients_content.bind("<Configure>", self._on_ingredients_configure)
         self.ingredients_canvas.bind("<Configure>", self._on_ingredients_canvas_configure)
         
+        # Numeric keyboard panel (hidden by default)
+        self.numeric_panel = tk.Frame(
+            self.ingredients_sidebar,
+            bg=self.bg_color,
+            highlightbackground=self.border_color,
+            highlightthickness=1
+        )
+        # Don't pack initially - will show when needed
+        self.numeric_panel.pack_forget()
+        
+        # Create numeric keyboard rows
+        self._setup_numeric_keyboard()
+        
         # Store reference for backward compatibility
         self.ingredients_box = self.ingredients_content
+    
+    def _setup_numeric_keyboard(self):
+        """Setup the numeric keyboard with tiles 1-5 and '...'"""
+        # Numeric panel container with padding
+        panel_container = tk.Frame(self.numeric_panel, bg=self.bg_color)
+        panel_container.pack(fill="both", expand=True, padx=20, pady=16)
+        
+        # First row: 1, 2, 3
+        row1 = tk.Frame(panel_container, bg=self.bg_color)
+        row1.pack(fill="x", pady=(0, 10))
+        
+        buttons_row1 = ["1", "2", "3"]
+        for idx, num in enumerate(buttons_row1):
+            btn = tk.Button(
+                row1,
+                text=num,
+                font=("Open Sans", 18, "normal"),
+                bg=self.surface_color,
+                fg=self.text_color,
+                activebackground="#3a3a3a",
+                activeforeground=self.text_color,
+                borderwidth=1,
+                relief="flat",
+                highlightthickness=1,
+                highlightbackground="#565869",
+                cursor="hand2",
+                command=lambda n=num: self._on_numeric_button_click(n),
+                padx=16,
+                pady=16
+            )
+            # Use grid for equal sizing
+            btn.grid(row=0, column=idx, sticky="nsew", padx=(0, 10) if idx < len(buttons_row1) - 1 else (0, 0))
+            row1.grid_columnconfigure(idx, weight=1, uniform="num_btn")
+        
+        row1.grid_rowconfigure(0, weight=1)
+        
+        # Second row: 4, 5, ...
+        row2 = tk.Frame(panel_container, bg=self.bg_color)
+        row2.pack(fill="x")
+        
+        buttons_row2 = ["4", "5", ".."]
+        for idx, num in enumerate(buttons_row2):
+            btn = tk.Button(
+                row2,
+                text=num,
+                font=("Open Sans", 18, "normal"),
+                bg=self.surface_color,
+                fg=self.text_color,
+                activebackground="#3a3a3a",
+                activeforeground=self.text_color,
+                borderwidth=1,
+                relief="flat",
+                highlightthickness=1,
+                highlightbackground="#565869",
+                cursor="hand2",
+                command=lambda n=num: self._on_numeric_button_click(n),
+                padx=16,
+                pady=16
+            )
+            # Use grid for equal sizing
+            btn.grid(row=0, column=idx, sticky="nsew", padx=(0, 10) if idx < len(buttons_row2) - 1 else (0, 0))
+            row2.grid_columnconfigure(idx, weight=1, uniform="num_btn")
+        
+        row2.grid_rowconfigure(0, weight=1)
+    
+    def _on_numeric_button_click(self, value: str):
+        """Handle numeric button click - insert value into input field"""
+        current_text = self.console_input.get()
+        # Remove placeholder if present
+        if current_text == "Message Recipe Assistant...":
+            self.console_input.delete(0, tk.END)
+            self.console_input.config(fg=self.text_color)
+            current_text = ""
+        
+        # Insert the value
+        cursor_pos = self.console_input.index(tk.INSERT)
+        self.console_input.insert(cursor_pos, value)
+        self.console_input.focus_set()
+    
+    def show_numeric_keyboard(self):
+        """Show the numeric keyboard panel"""
+        if not self.numeric_panel.winfo_viewable():
+            self.numeric_panel.pack(side=tk.BOTTOM, fill="x", padx=0, pady=0)
+    
+    def hide_numeric_keyboard(self):
+        """Hide the numeric keyboard panel"""
+        if self.numeric_panel.winfo_viewable():
+            self.numeric_panel.pack_forget()
     
     def _on_chat_configure(self, event):
         """Update scroll region when chat content changes"""
@@ -521,6 +622,9 @@ class GUICookingAssistant(CookingUI):
         
         # Clear ingredients panel
         self.set_ingredients("")
+        
+        # Hide numeric keyboard
+        self.hide_numeric_keyboard()
         
         # Gantt chart is no longer in the UI (removed for chat layout)
         
@@ -798,6 +902,15 @@ class GUICookingAssistant(CookingUI):
         self.current_callback = callback
         self.current_default = default
         
+        # Check if this is a numeric question
+        numeric_keywords = ["combien", "nombre", "nombre de", "quantité", "how many", "number"]
+        is_numeric = any(keyword.lower() in prompt.lower() for keyword in numeric_keywords)
+        
+        if is_numeric:
+            self.show_numeric_keyboard()
+        else:
+            self.hide_numeric_keyboard()
+        
         # Show visual indicator
         self.show_input_prompt()
         
@@ -902,6 +1015,8 @@ class GUICookingAssistant(CookingUI):
         if self.current_callback:
             # Hide the input prompt
             self.hide_input_prompt()
+            # Hide numeric keyboard after input is submitted
+            self.hide_numeric_keyboard()
             
             # Call the callback with the user's input
             callback = self.current_callback
