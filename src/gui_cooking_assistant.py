@@ -808,14 +808,17 @@ class GUICookingAssistant(CookingUI):
     
     def _add_chat_message(self, text: str, is_user: bool = False, return_row: bool = False):
         """Add a message to the chat (assistant or user style)"""
-        # Message row container - reduced padding
+        # Message row container - padding depends on message type
         message_row = tk.Frame(
             self.chat_messages_content,
             bg=self.bg_color,
-            padx=20,
-            pady=2  # Reduced for tighter line spacing after \n
+            padx=20
         )
-        message_row.pack(fill="x")
+        # For user messages, simulate ~3 line breaks with extra top padding
+        if is_user:
+            message_row.pack(fill="x", pady=(24, 2))
+        else:
+            message_row.pack(fill="x", pady=2)  # Reduced for tighter line spacing after \n
 
         # Message content container (centered, max-width 700px equivalent)
         message_content = tk.Frame(message_row, bg=self.bg_color)
