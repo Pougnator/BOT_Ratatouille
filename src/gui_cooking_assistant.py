@@ -312,90 +312,79 @@ class GUICookingAssistant(CookingUI):
         )
         # Track visibility state
         self.numeric_keyboard_visible = False
+        # Container for numeric buttons (rebuilt depending on state)
+        self.numeric_panel_container = None
         # Don't pack initially - will show when needed
         
-        # Create numeric keyboard rows
+        # Initial keyboard layout (will be rebuilt dynamically when shown)
         self._setup_numeric_keyboard()
         
         # Store reference for backward compatibility
         self.ingredients_box = self.ingredients_content
     
     def _setup_numeric_keyboard(self):
-        """Setup the numeric keyboard with tiles 1-5 and '...'"""
+        """Prepare the numeric keyboard container (buttons are built dynamically)."""
+        # Clear previous container if any
+        if self.numeric_panel_container is not None:
+            self.numeric_panel_container.destroy()
+        
         # Numeric panel container with padding
-        panel_container = tk.Frame(self.numeric_panel, bg=self.bg_color)
-        panel_container.pack(fill="both", expand=True, padx=20, pady=16)
-        
-        # Calculate exact button width: (320px sidebar - 40px padding - 20px gaps) / 3 = ~87px
-        # Force exact width for all buttons
-        button_width = 80  # Fixed width in pixels
-        
-        # First row: 1, 2, 3
-        row1 = tk.Frame(panel_container, bg=self.bg_color)
+        self.numeric_panel_container = tk.Frame(self.numeric_panel, bg=self.bg_color)
+        self.numeric_panel_container.pack(fill="both", expand=True, padx=20, pady=16)
+
+    def _build_numeric_buttons(self, labels):
+        """(Re)build numeric buttons from a flat list of labels."""
+        # Reset container
+        self._setup_numeric_keyboard()
+
+        button_width = 80  # Fixed pixel width
+
+        # Arrange in two rows of up to 3 buttons each
+        row1 = tk.Frame(self.numeric_panel_container, bg=self.bg_color)
         row1.pack(fill="x", pady=(0, 10))
-        
-        buttons_row1 = ["1", "2", "3"]
-        for idx, num in enumerate(buttons_row1):
-            # Create a fixed-width frame to contain the button
-            btn_frame = tk.Frame(row1, width=button_width, height=60, bg=self.bg_color)
-            btn_frame.pack_propagate(False)  # Prevent frame from shrinking
-            btn_frame.grid(row=0, column=idx, padx=(0, 10) if idx < len(buttons_row1) - 1 else (0, 0), sticky="nsew")
-            
-            btn = tk.Button(
-                btn_frame,
-                text=num,
-                font=("Open Sans", 18, "normal"),
-                bg=self.surface_color,
-                fg=self.text_color,
-                activebackground="#3a3a3a",
-                activeforeground=self.text_color,
-                borderwidth=1,
-                relief="flat",
-                highlightthickness=1,
-                highlightbackground="#565869",
-                cursor="hand2",
-                command=lambda n=num: self._on_numeric_button_click(n),
-                padx=16,
-                pady=16
-            )
-            btn.pack(fill="both", expand=True)
-        
-        row1.grid_rowconfigure(0, minsize=60)
-        
-        # Second row: 4, 5, ...
-        row2 = tk.Frame(panel_container, bg=self.bg_color)
+        row2 = tk.Frame(self.numeric_panel_container, bg=self.bg_color)
         row2.pack(fill="x")
-        
-        buttons_row2 = ["4", "5", ".."]
-        for idx, num in enumerate(buttons_row2):
-            # Create a fixed-width frame to contain the button
-            btn_frame = tk.Frame(row2, width=button_width, height=60, bg=self.bg_color)
-            btn_frame.pack_propagate(False)  # Prevent frame from shrinking
-            btn_frame.grid(row=0, column=idx, padx=(0, 10) if idx < len(buttons_row2) - 1 else (0, 0), sticky="nsew")
-            
-            btn = tk.Button(
-                btn_frame,
-                text=num,
-                font=("Open Sans", 18, "normal"),
-                bg=self.surface_color,
-                fg=self.text_color,
-                activebackground="#3a3a3a",
-                activeforeground=self.text_color,
-                borderwidth=1,
-                relief="flat",
-                highlightthickness=1,
-                highlightbackground="#565869",
-                cursor="hand2",
-                command=lambda n=num: self._on_numeric_button_click(n),
-                padx=16,
-                pady=16
-            )
-            btn.pack(fill="both", expand=True)
-        
-        row2.grid_rowconfigure(0, minsize=60)
+
+        first_row_labels = labels[:3]
+        second_row_labels = labels[3:6]
+
+        def _add_buttons(row_frame, row_labels):
+            for idx, num in enumerate(row_labels):
+                btn_frame = tk.Frame(row_frame, width=button_width, height=60, bg=self.bg_color)
+                btn_frame.pack_propagate(False)
+                btn_frame.grid(row=0, column=idx, padx=(0, 10) if idx < len(row_labels) - 1 else (0, 0), sticky="nsew")
+
+                btn = tk.Button(
+                    btn_frame,
+                    text=num,
+                    font=("Open Sans", 18, "normal"),
+                    bg=self.surface_color,
+                    fg=self.text_color,
+                    activebackground="#3a3a3a",
+                    activeforeground=self.text_color,
+                    borderwidth=1,
+                    relief="flat",
+                    highlightthickness=1,
+                    highlightbackground="#565869",
+                    cursor="hand2",
+                    command=lambda n=num: self._on_numeric_button_click(n),
+                    padx=16,
+                    pady=16
+                )
+                btn.pack(fill="both", expand=True)
+
+            row_frame.grid_rowconfigure(0, minsize=60)
+
+        _add_buttons(row1, first_row_labels)
+        if second_row_labels:
+            _add_buttons(row2, second_row_labels)
     
     def _on_numeric_button_click(self, value: str):
         """Handle numeric button click - set value and auto-submit"""
+        # Special mapping: '+' means '0' (request more recipes)
+        if value == "+":
+            value = "0"
+
         # Clear input and set the clicked value
         self.console_input.delete(0, tk.END)
         self.console_input.config(fg=self.text_color)
@@ -409,6 +398,21 @@ class GUICookingAssistant(CookingUI):
     
     def show_numeric_keyboard(self):
         """Show the numeric keyboard panel"""
+        # Choose button set based on current state
+        labels = ["1", "2", "3", "4", "5", ".."]
+        try:
+            if self.cooking_assistant and hasattr(self.cooking_assistant, "state_machine"):
+                current_state = self.cooking_assistant.state_machine.current_state
+                if current_state == CookingState.RECIPE_CONFIRMATION:
+                    # In recipe confirmation: 1-4, '+', '?' (help/future use)
+                    labels = ["1", "2", "3", "4", "+", "?"]
+        except Exception as e:
+            # On error, keep default labels
+            print(f"Error determining state for numeric keyboard: {e}")
+
+        # (Re)build the buttons for the current context, even if already visible
+        self._build_numeric_buttons(labels)
+
         if not self.numeric_keyboard_visible:
             # Pack at bottom, after ingredients list
             self.numeric_panel.pack(side=tk.BOTTOM, fill="x", padx=0, pady=0)
