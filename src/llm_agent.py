@@ -88,8 +88,13 @@ Pour chaque recette, indique :
 2. Une brève description appétissante.
 3. Un niveau de difficulté (Facile / Moyen / Difficile).
 
-La première recette doit utiliser tous les ingrédients fournis.
-Les autres recettes peuvent être un peu plus flexibles, mais doivent rester délicieuses et utiliser au moins certains des ingrédients fournis, avec éventuellement quelques ingrédients très courants.
+Tu peux proposer des recettes avec plus ou moins d'ingrédients que les ingrédients fournis. 
+Par exemples, si les ingrédients fournis sont "pâtes, tomates, riz, haricots verts, thon", 
+tu peux proposer une recette avec les pates à la sauce tomate et au thon, 
+une autre avec le riz sauté aux oeufs et aux tomates, etc. 
+Neanmoins au moins une recette ne doit pas utiliser d'ingrédients supplémentaires par rapport aux ingrédients fournis.
+
+Il est crucial que les recettes soient delicieuses et variées. 
 Assure‑toi de proposer des recettes variées géographiquement (française, italienne, japonaise, etc.) avec au moins une recette non européenne.
 Les recettes doivent être en français.
 """
@@ -188,7 +193,7 @@ Les recettes doivent être en français.
 ABSOLUTELY CRITICAL: Les dépendances logiques entre les étapes doivent être COMPLÈTES et PRÉCISES!
 
 Pour chaque étape, pose-toi ces questions:
-1. Quels ingrédients sont utilisés dans cette étape?
+1. Quels ingrédients sont utilisés dans cette étape? N'oublies pas d'inclure les epices et les condiments, avec les quanités associés.
 2. Quelles étapes préalables ont préparé ou transformé ces ingrédients?
 3. Est-ce que TOUTES ces étapes préalables sont listées comme dépendances?
 

@@ -103,11 +103,18 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
         # Check if there's an additional recipe request
         additional_request = self.state_machine.additional_recipe_request
         
-        recipes_response = self.llm_agent.propose_recipes(
-            self.state_machine.ingredients,
-            self.state_machine.servings,
-            additional_request
-        )
+        # Show loading indicator
+        self.ui.show_loading("Recherche de recettes...")
+        
+        try:
+            recipes_response = self.llm_agent.propose_recipes(
+                self.state_machine.ingredients,
+                self.state_machine.servings,
+                additional_request
+            )
+        finally:
+            # Hide loading indicator
+            self.ui.hide_loading()
         
         # Clear the additional request after using it
         self.state_machine.clear_additional_recipe_request()
@@ -131,26 +138,39 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
         # self.ui.show_text("Entrez le numéro de la recette (1-4) ou le nom de la recette:\n")
         # self.ui.show_text("Entrez 0 + instructions additionnelles pour demander plus de recettes\n")
         
-        # Store the result from processing the choice
+        # 1) On demande la saisie et on l'affiche dans l'UI (géré par ask_text / process_command)
+        # 2) Une fois la saisie faite, on traite le choix de recette ici (sans callback spécifique coté UI)
+
+        # Valeur et résultat du choix
         self._recipe_choice_result = False
-        
-        def handle_recipe_choice(choice: str):
-            self._recipe_choice_result = self._process_recipe_choice(choice)
-            self._recipe_confirmed.set()
-        
+        self._recipe_choice_value = None
+
+        # Event pour synchroniser la coroutine avec la réponse de l'utilisateur
         self._recipe_confirmed = threading.Event()
-        self.ui.ask_text(txt_confirm_recipe, handle_recipe_choice)
-        
-        # Wait for the callback to complete
+
+        def _on_user_input(value: str):
+            """Callback générique interne : stocke la valeur et réveille la coroutine.
+            On ne fait AUCUN traitement de recette ici pour éviter tout effet visuel étrange.
+            """
+            self._recipe_choice_value = value
+            self._recipe_confirmed.set()
+
+        # Demander le texte à l'utilisateur ; l'UI gère l'affichage de la bulle de réponse
+        self.ui.ask_text(txt_confirm_recipe, _on_user_input)
+
+        # Attendre que l'utilisateur ait répondu
         while not self._recipe_confirmed.is_set():
             await asyncio.sleep(0.1)
-        
-        # Return the result from processing the choice
+
+        # Maintenant seulement, traiter le choix de recette
+        self._recipe_choice_result = self._process_recipe_choice(self._recipe_choice_value)
+
+        # Retourner le résultat du traitement
         return self._recipe_choice_result
     
     def _process_recipe_choice(self, choice: str):
         """Process the recipe choice (shared logic for UI and CLI)"""
-      
+       
 
         if not choice:
             print("Veuillez entrer un numéro de recette.")
@@ -191,19 +211,27 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
             recipe_name = recipe_content.get("name", "")
             recipe_description = recipe_content.get("description", "")
             
-            self.ui.show_text(f"\nVous avez choisi: {recipe_name}\n")
-            if recipe_description:
-                self.ui.show_text(f"{recipe_description}\n")
+            # self.ui.show_text(f"\nVous avez choisi: {recipe_name}\n")
+            # if recipe_description:
+            #     self.ui.show_text(f"{recipe_description}\n")
         else:
             self.ui.show_error("Numéro de recette invalide.")
             return False
         
         # Get recipe steps from LLM
-        recipe_data = self.llm_agent.get_recipe_steps(
-            recipe_name,
-            self.state_machine.ingredients,
-            self.state_machine.servings
-        )
+        # Small heading before loading indicator
+        self.ui.show_text("\nPréparation")
+        self.ui.show_loading("Préparation de la recette...")
+        
+        try:
+            recipe_data = self.llm_agent.get_recipe_steps(
+                recipe_name,
+                self.state_machine.ingredients,
+                self.state_machine.servings
+            )
+        finally:
+            # Hide loading indicator
+            self.ui.hide_loading()
         
         # Handle case where recipe_data might be a JSON string
         if isinstance(recipe_data, str):
@@ -270,6 +298,10 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
         
         print("\n Diagramme de Gantt généré\n")
         print(gantt_data)
+        
+        # Display steps immediately after receiving them
+        self.ui.show_text("\n✓ Recette préparée avec succès!\n")
+        self.display_cooking_steps()
         
         return True
         
@@ -399,11 +431,17 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
         context = "\n".join(context_parts)
 
         try:
+            # Show loading indicator
+            self.ui.show_loading("Recherche d'une réponse...")
+            
             # Reuse guide_step as a generic Q&A with this context
             response = self.llm_agent.guide_step(context, question)
             self.ui.show_text(f"\n💡 Conseil de cuisine:\n{response}\n")
         except Exception as e:
             self.ui.show_error(f"Erreur lors de la demande d'aide: {e}")
+        finally:
+            # Hide loading indicator
+            self.ui.hide_loading()
     
     async def run(self):
         try:
@@ -436,7 +474,7 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
                         self.state_machine.transition_to(CookingState.COOKING_GUIDANCE)
                     
                 elif self.state_machine.current_state == CookingState.COOKING_GUIDANCE:
-                    self.display_cooking_steps()
+                    # Steps are already displayed in _process_recipe_choice, just transition
                     self.state_machine.transition_to(CookingState.STEP_EXECUTION)
                     
                 elif self.state_machine.current_state == CookingState.STEP_EXECUTION:

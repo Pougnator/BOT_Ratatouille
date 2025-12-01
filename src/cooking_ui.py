@@ -73,4 +73,14 @@ class CookingUI(ABC):
     def show_success(self, message: str):
         """Display a success message"""
         pass
+    
+    @abstractmethod
+    def show_loading(self, message: str = "Chargement..."):
+        """Show a loading indicator"""
+        pass
+    
+    @abstractmethod
+    def hide_loading(self):
+        """Hide the loading indicator"""
+        pass
 

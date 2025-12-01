@@ -806,7 +806,7 @@ class GUICookingAssistant(CookingUI):
     
     # ========== CookingUI Interface Implementation ==========
     
-    def _add_chat_message(self, text: str, is_user: bool = False):
+    def _add_chat_message(self, text: str, is_user: bool = False, return_row: bool = False):
         """Add a message to the chat (assistant or user style)"""
         # Message row container - reduced padding
         message_row = tk.Frame(
@@ -816,7 +816,7 @@ class GUICookingAssistant(CookingUI):
             pady=2  # Reduced for tighter line spacing after \n
         )
         message_row.pack(fill="x")
-        
+
         # Message content container (centered, max-width 700px equivalent)
         message_content = tk.Frame(message_row, bg=self.bg_color)
         if is_user:
@@ -886,6 +886,10 @@ class GUICookingAssistant(CookingUI):
         # Refresh UI and scroll to bottom
         self.root.update_idletasks()
         self.chat_canvas.yview_moveto(1.0)
+        
+        # Return message_row if requested (for loading indicator)
+        if return_row:
+            return message_row
     
     def show_text(self, text: str):
         """Display text in the chat as assistant message"""
@@ -910,6 +914,7 @@ class GUICookingAssistant(CookingUI):
     def ask_text(self, prompt: str, callback: Callable[[str], None], default: Optional[str] = None):
         """Ask the user for text input - callback-based approach"""
         # Display the prompt
+        
         self.show_text(f"{prompt}\n")
         
         # Set up the callback
@@ -1001,6 +1006,79 @@ class GUICookingAssistant(CookingUI):
     def show_success(self, message: str):
         """Display a success message"""
         self.show_text(f"\n✓ {message}")
+    
+    def show_loading(self, message: str = "Chargement..."):
+        """Show a loading indicator in the chat"""
+        def _show_loading_ui():
+            # Create a loading message with animated dots (single persistent line)
+            loading_text = message
+            self._loading_message_row = self._add_chat_message(loading_text, is_user=False, return_row=True)
+            # Store reference to the label for animation
+            self._loading_label = None
+            for widget in self._loading_message_row.winfo_children():
+                if isinstance(widget, tk.Frame):
+                    for child in widget.winfo_children():
+                        if isinstance(child, tk.Label):
+                            self._loading_label = child
+                            break
+                    if self._loading_label:
+                        break
+            # Start animation
+            self._loading_dots = 1
+            self._loading_base_text = message
+            if hasattr(self, '_loading_label') and self._loading_label:
+                self._animate_loading()
+        
+        # Ensure UI update happens on main thread
+        if threading.current_thread() is threading.main_thread():
+            _show_loading_ui()
+        else:
+            self.root.after(0, _show_loading_ui)
+    
+    def hide_loading(self):
+        """Hide the loading indicator"""
+        def _hide_loading_ui():
+            # Cancel any pending animation
+            if hasattr(self, '_loading_animation_id') and self._loading_animation_id:
+                try:
+                    self.root.after_cancel(self._loading_animation_id)
+                except:
+                    pass
+                self._loading_animation_id = None
+            
+            # Remove the loading message
+            if hasattr(self, '_loading_message_row') and self._loading_message_row:
+                try:
+                    self._loading_message_row.destroy()
+                except:
+                    pass
+                self._loading_message_row = None
+                self._loading_label = None
+        
+        # Ensure UI update happens on main thread
+        if threading.current_thread() is threading.main_thread():
+            _hide_loading_ui()
+        else:
+            self.root.after(0, _hide_loading_ui)
+    
+    def _animate_loading(self):
+        """Animate loading dots"""
+        if not hasattr(self, '_loading_message_row') or not self._loading_message_row:
+            return
+        
+        # Update dots (cycle through 1, 2, 3 dots)
+        self._loading_dots = (self._loading_dots % 3) + 1
+        dots = "." * self._loading_dots
+        
+        try:
+            # Update the label text
+            if hasattr(self, '_loading_label') and self._loading_label:
+                self._loading_label.config(text=f"{self._loading_base_text}{dots}")
+        except Exception as e:
+            pass
+        
+        # Schedule next animation
+        self._loading_animation_id = self.root.after(500, self._animate_loading)
     
     # ========== Helper Methods ==========
     
