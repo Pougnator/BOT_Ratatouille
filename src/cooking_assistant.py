@@ -224,9 +224,11 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
         self.ui.show_loading("Préparation de la recette...")
         
         try:
+            # Use the ingredients specific to the chosen recipe (from LLM proposal)
+            recipe_ingredients = recipe_content.get("ingredients", [])
             recipe_data = self.llm_agent.get_recipe_steps(
                 recipe_name,
-                self.state_machine.ingredients,
+                recipe_ingredients,
                 self.state_machine.servings
             )
         finally:

@@ -88,11 +88,19 @@ Pour chaque recette, indique :
 2. Une brève description appétissante.
 3. Un niveau de difficulté (Facile / Moyen / Difficile).
 
-Tu peux proposer des recettes avec plus ou moins d'ingrédients que les ingrédients fournis. 
+ATTENTION IMPORTANT: Tu peux proposer des recettes avec plus ou moins d'ingrédients que les ingrédients fournis. 
 Par exemples, si les ingrédients fournis sont "pâtes, tomates, riz, haricots verts, thon", 
 tu peux proposer une recette avec les pates à la sauce tomate et au thon, 
 une autre avec le riz sauté aux oeufs et aux tomates, etc. 
+Donc ce n'est pas la peine d'essayer d'utiliser tous les ingrédients fournis SURTOUT SI PLUS DE 3 INGREDIENTS SONT FOURNIS dans une récette,
+surtout si ces ingrédients ne vont pas avec la recette initiale ou ne vont pas ensemble.
+Autre exemple: si les igrédients fournis sont " chou, tomates, lait, oeufs", ce n'est pas la peine de proposer de faire une soupe de chou aux tomates et au lait. 
+C'est mieux de proposer une recette de choucroute avec le chou comme ingrédient principal, une autre recette d'omlette à la tomate, une autre recette à base de lait etc. 
 Neanmoins au moins une recette ne doit pas utiliser d'ingrédients supplémentaires par rapport aux ingrédients fournis.
+
+N'oublie pas que les épices et les condiments sont aussi très important, même si l'utilisateur ne va que très rarement les entrer dans la liste d'ingrédients disponibles.
+Donc n'hésite pas à les inclure toi même dans les recettes que tu proposes. Les épices et les condiments sont l'âme de la cuisine.
+Il est crucial de les inclure dans les recettes que tu proposes, car elles font toute la saveur. 
 
 Il est crucial que les recettes soient delicieuses et variées. 
 Assure‑toi de proposer des recettes variées géographiquement (française, italienne, japonaise, etc.) avec au moins une recette non européenne.
@@ -124,9 +132,35 @@ Les recettes doivent être en français.
                                     "type": "string",
                                     "description": "Niveau de difficulté de la recette.",
                                     "enum": ["Facile", "Moyen", "Difficile"]
+                                },
+                                "ingredients": {
+                                    "type": "array",
+                                    "description": "Liste des ingrédients nécessaires pour cette recette.",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "quantity": {
+                                                "type": "number",
+                                                "description": "Quantité de l'ingrédient."
+                                            },
+                                            "unit": {
+                                                "type": "string",
+                                                "description": "Unité de mesure (g, ml, c.à.s, etc.)."
+                                            },
+                                            "name": {
+                                                "type": "string",
+                                                "description": "Nom de l'ingrédient."
+                                            },
+                                            "preparation": {
+                                                "type": "string",
+                                                "description": "Détail de préparation (haché, émincé, etc.)."
+                                            }
+                                        },
+                                        "required": ["name"]
+                                    }
                                 }
                             },
-                            "required": ["name", "description", "difficulty"]
+                            "required": ["name", "description", "difficulty", "ingredients"]
                         }
                     }
                 },
@@ -153,14 +187,37 @@ Les recettes doivent être en français.
             print(f"Error decoding JSON response: {response}")
             return {"recipes": []}
 
-    def explain_ingredients_naturally(self, ingredients: list, recipe_name: str, recipe_steps: list) -> str:
-        system_prompt = "You are a helpful cooking assistant. Explain the ingredients I need for a recipe in a natural way that is easy to understand."
-        user_prompt = f"I have these ingredients: {ingredients}. I'm cooking the folowing recipe: :{recipe_name} and i am using the following steps: {recipe_steps}. Please use a concise and natural language to summarise the list of ingredients and the quantities i need"
-        return self.get_response(user_prompt, system_prompt)
+    # def explain_ingredients_naturally(self, ingredients: list, recipe_name: str, recipe_steps: list) -> str:
+    #     system_prompt = "You are a helpful cooking assistant. Explain the ingredients I need for a recipe in a natural way that is easy to understand."
+    #     user_prompt = f"I have these ingredients: {ingredients}. I'm cooking the folowing recipe: :{recipe_name} and i am using the following steps: {recipe_steps}. Please use a concise and natural language to summarise the list of ingredients and the quantities i need"
+    #     return self.get_response(user_prompt, system_prompt)
         
 
     def get_recipe_steps(self, recipe_name: str, ingredients: list, servings: int = 2) -> dict:
-        ingredients_str = ", ".join(ingredients)
+        # Ingredients are expected to be the structured list coming from recipe proposals:
+        # [{"name": ..., "quantity": ..., "unit": ..., "preparation": ...}, ...]
+        def _fmt_ing(ing) -> str:
+            # Ingredients MUST be dicts in the expected structured format.
+            if isinstance(ing, dict):
+                name = str(ing.get("name", "")).strip()
+                qty = str(ing.get("quantity", "")).strip()
+                unit = str(ing.get("unit", "")).strip()
+                prep = str(ing.get("preparation", "")).strip()
+                parts = []
+                if qty:
+                    parts.append(qty)
+                if unit:
+                    parts.append(unit)
+                if name:
+                    parts.append(name)
+                base = " ".join(parts).strip() or name or "ingrédient"
+                if prep:
+                    return f"{base} ({prep})"
+                return base
+            # If we ever get here, it means the calling code passed a wrong format.
+            raise TypeError(f"Invalid ingredient format in get_recipe_steps: expected dict, got {type(ing).__name__} -> {ing!r}")
+
+        ingredients_str = ", ".join(_fmt_ing(i) for i in ingredients)
         system_prompt = """Tu es un chef francais, amoureux de la cuisine et de recettes du monde. Tu es un expert très amical et sympatique en cuisine et en recettes. Tu es capable de créer des recettes à partir d'ingrédients et de les détailler en étapes de cuisine.
         
         KEY REQUIREMENTS:
@@ -207,7 +264,17 @@ Exemple détaillé - une recette de risotto:
 
 RAPPEL: Chaque fois qu'un ingrédient est utilisé, TOUTES les étapes de sa préparation doivent être des dépendances!
 
-Ces relations de dépendance sont ESSENTIELLES pour générer un diagramme de Gantt précis et utile!"""
+Ces relations de dépendance sont ESSENTIELLES pour générer un diagramme de Gantt précis et utile!
+
+IMPORTANT: N'oublie pas que les épices et les condiments sont aussi très important, même si l'utilisateur ne va que très rarement les entrer dans la liste d'ingrédients disponibles.
+Donc n'hésite pas à les inclure toi même dans les recettes que tu proposes. Les épices et les condiments sont l'âme de la cuisine.
+Il est crucial de les inclure dans les recettes que tu proposes, car elles font toute la saveur. Soit également très précis sur les quantités de chaque condiments, et mesures cette quantité en grammes.
+Par exemple: piment de cayenne 10g, poivre noir 3g, poudre de curry 30g, etc 
+
+Certains ingrédients peuvent être optionnels pour rendre la recette encore plus délicieuse. Tu dois les mentionner avec le prefixe (optionnel: )
+
+"""
+
         
         recipe_function = [{
             "name": "format_recipe",
