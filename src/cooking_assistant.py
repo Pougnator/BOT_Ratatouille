@@ -190,8 +190,9 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
             if additional_prompt:
                 self.state_machine.additional_recipe_request = additional_prompt
                 self.ui.show_text(f"Avec précision: {additional_prompt}\n")
+            else: self.state_machine.additional_recipe_request = "Trouve des recettes differentes de celles déjà proposées"
             return False
-
+            
         # If the choice is not a pure number, treat it as a general question
         # e.g. "c'est quoi la premiere recette"
         if not choice_str.isdigit():
