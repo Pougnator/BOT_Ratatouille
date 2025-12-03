@@ -1159,8 +1159,7 @@ class GUICookingAssistant(CookingUI):
                     print(f"Error handling 'next' command: {e}")
             else:
                 print("Assistant is not running; 'next' has no effect.")
-        elif command.lower() == "ingredients":
-            self.update_ingredients("Sample ingredients:\n- Tomatoes\n- Onions\n- Garlic\n- Basil")
+        
         elif command.lower().startswith("ask "):
             # Console 'ask' command: general cooking question, handled by the assistant
             question = command[4:].strip()
@@ -1169,8 +1168,13 @@ class GUICookingAssistant(CookingUI):
             elif not self.cooking_assistant:
                 print("Assistant is not running; cannot ask a question.")
             else:
+                # Lancer la question dans un thread séparé pour ne pas bloquer l'UI
                 try:
-                    self.cooking_assistant.ask_question(question)
+                    import threading
+                    threading.Thread(
+                        target=lambda: self.cooking_assistant.ask_question(question),
+                        daemon=True
+                    ).start()
                 except Exception as e:
                     print(f"Error handling 'ask' command: {e}")
         elif command.lower() == "debug":
@@ -1179,6 +1183,7 @@ class GUICookingAssistant(CookingUI):
             import sys
             
             debug_info = f"""
+        
 DEBUGGING INFORMATION:
 ---------------------
 Current Directory: {os.getcwd()}
@@ -1190,10 +1195,20 @@ Assistant thread active: {"Yes" if self.assistant_thread and self.assistant_thre
 """
             print(debug_info)
         else:
-            # Just echo back if no cooking assistant is running
-            if not self.assistant_thread or not self.assistant_thread.is_alive():
-                self.print_to_console(f"Unknown command. Type 'help' for a list of commands.")
-    
+            # Considérer le texte libre comme une question à l'assistant
+            if self.cooking_assistant:
+                try:
+                    import threading
+                    question = command
+                    threading.Thread(
+                        target=lambda: self.cooking_assistant.ask_question(question),
+                        daemon=True
+                    ).start()
+                except Exception as e:
+                    print(f"Error handling command: {e}")
+            else:
+                print("Unknown command. Type 'help' for a list of commands.")
+
     def show_previous_command(self, event=None):
         """Show previous command from history when up arrow is pressed"""
         if self.command_history and self.history_index > 0:

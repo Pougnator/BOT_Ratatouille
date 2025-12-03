@@ -52,7 +52,7 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
         """Collect number of servings - async version using UI callbacks"""
         def handle_servings_input(input_text: str):
             try:
-                servings = int(input_text) if input_text else 2
+                servings = int(input_text) 
                 if servings > 0:
                     self.state_machine.set_servings(servings)
                     self.ui.show_success(f"On cuisine pour {servings} personnes")
@@ -61,15 +61,15 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
                 else:
                     self.ui.show_error("Veuillez entrer un nombre positif.")
                     # Ask again
-                    self.ui.ask_text("Nombre de personnes: ", handle_servings_input, default="2")
+                    self.ui.ask_text("Nombre de personnes: ", handle_servings_input)
             except ValueError:
                 self.ui.show_error("Veuillez entrer un nombre valide.")
                 # Ask again
-                self.ui.ask_text("Nombre de personnes: ", handle_servings_input, default="2")
+                self.ui.ask_text("Nombre de personnes: ", handle_servings_input)
         
         # self.ui.show_text("Pour combien de personnes voulez-vous cuisiner?\n")
         self._servings_collected = threading.Event()
-        self.ui.ask_text("Pour combien de personnes voulez-vous cuisiner?", handle_servings_input, default="2")
+        self.ui.ask_text("Pour combien de personnes voulez-vous cuisiner?", handle_servings_input)
         
         # Wait for the callback to complete
         while not self._servings_collected.is_set():
@@ -170,54 +170,50 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
     
     def _process_recipe_choice(self, choice: str):
         """Process the recipe choice (shared logic for UI and CLI)"""
-       
-
         if not choice:
             print("Veuillez entrer un numéro de recette.")
             return False
 
         choice_str = choice.strip()
+
+        # If the choice is a number, it is a recipe index. So it should be between 1 and 4
+        # In which case we use it to select the recipe from the proposed recipes list
+        if choice_str.isdigit():
+            recipe_index = int(choice_str) - 1
+            if 0 <= recipe_index < len(self.state_machine.proposed_recipes):
+                # Récupérer le contenu de la recette choisie
+                recipe_content = self.state_machine.proposed_recipes[recipe_index]
+                self.state_machine.selected_recipe = recipe_content
+                recipe_name = recipe_content.get("name", "Error: Recipe name not found")
+            else:
+                self.ui.show_error(f"Numéro de recette invalide. Veuillez choisir une recette de 1 à {len(self.state_machine.proposed_recipes)}")
+                return False
         
-        # Check if user wants more recipes (0 + optional extra prompt)
-        if choice_str.startswith('0'):
-            additional_prompt = choice_str[1:].strip()
-            self.ui.show_text("\nRecherche de plus de recettes...\n")
-            
-            # Go back to the recipe proposal state
-            self.state_machine.transition_to(CookingState.RECIPE_PROPOSAL)
-            
-            # If there's an additional prompt, store it for the LLM to use
-            if additional_prompt:
-                self.state_machine.additional_recipe_request = additional_prompt
-                self.ui.show_text(f"Avec précision: {additional_prompt}\n")
-            else: self.state_machine.additional_recipe_request = "Trouve des recettes differentes de celles déjà proposées"
-            return False
-            
-        # If the choice is not a pure number, treat it as a general question
-        # e.g. "c'est quoi la premiere recette"
-        if not choice_str.isdigit():
-            self.ask_question(choice_str)
-            # Stay in RECIPE_CONFIRMATION state
-            return False
-
-        # At this point, the choice is a valid number string
-        recipe_name = None
-        recipe_index = int(choice_str) - 1  # user numbers start at 1
-
-        if 0 <= recipe_index < len(self.state_machine.proposed_recipes):
-            # Utiliser le contenu de la recette proposée pour extraire son nom
-            recipe_content = self.state_machine.proposed_recipes[recipe_index]
-            
-            # Extraire le nom de la recette
-            recipe_name = recipe_content.get("name", "")
-            recipe_description = recipe_content.get("description", "")
-            
-            # self.ui.show_text(f"\nVous avez choisi: {recipe_name}\n")
-            # if recipe_description:
-            #     self.ui.show_text(f"{recipe_description}\n")
+        # If the choice is not a number, it is either an additional prompt (starting with 0)
+        # or a question to the assistant.
         else:
-            self.ui.show_error("Numéro de recette invalide.")
-            return False
+            # Check if user wants more recipes (0 + optional extra prompt)
+            if choice_str.startswith('0'):
+                additional_prompt = choice_str[1:].strip()
+                self.ui.show_text("\nRecherche de plus de recettes...\n")
+                
+                # Go back to the recipe proposal state
+                self.state_machine.transition_to(CookingState.RECIPE_PROPOSAL)
+                
+                # If there's an additional prompt, store it for the LLM to use
+                if additional_prompt:
+                    self.state_machine.additional_recipe_request = additional_prompt
+                    self.ui.show_text(f"Trouves d'autres recettes differentes de celles déjà proposées, avec précision: {additional_prompt}\n")
+                else:
+                    self.state_machine.additional_recipe_request = "Trouve des recettes differentes de celles déjà proposées"
+                return False
+            else:
+                self.ask_question(choice_str)
+                return False
+        
+        # À partir d'ici, on sait qu'on a une recette valide avec:
+        # - recipe_content : le dictionnaire de la recette choisie
+        # - recipe_name    : le nom de la recette
         
         # Get recipe steps from LLM
         # Small heading before loading indicator
@@ -357,6 +353,7 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
             
             if user_input == 'next':
                 return True
+          
             # In UI-only mode, other text commands are not handled here yet
                 
     def _setup_button_controls(self):
@@ -386,11 +383,32 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
     def _button_help(self):
         """Handler for the 'Help' button (GPIO 19)"""
         self.ui.show_text("❓ Bouton d'aide pressé. Posez votre question.\n")
+        
+        # Utilise le même pattern que pour confirm_recipe :
+        # 1) Le callback UI ne fait que stocker la valeur
+        # 2) Le traitement (appel LLM + mise à jour UI) est fait ensuite,
+        #    en dehors du contexte du callback, pour éviter les glitches.
+        import threading
 
-        def on_question(question: str):
-            self.ask_question(question)
+        self._help_question_value = None
+        self._help_question_event = threading.Event()
 
-        self.ui.ask_text("Votre question", on_question)
+        def _on_question(value: str):
+            self._help_question_value = value
+            self._help_question_event.set()
+
+        # Demander la question à l'utilisateur
+        self.ui.ask_text("Votre question", _on_question)
+
+        def _process_help_question():
+            # Attendre la saisie utilisateur
+            self._help_question_event.wait()
+            question = (self._help_question_value or "").strip()
+            if question:
+                self.ask_question(question)
+
+        # Lancer le traitement dans un thread séparé pour ne pas bloquer l'UI
+        threading.Thread(target=_process_help_question, daemon=True).start()
     
     def _button_back(self):
         """Handler for the 'Back/Cancel' button (GPIO 0)"""

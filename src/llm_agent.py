@@ -81,7 +81,7 @@ class LLMAgent:
     def propose_recipes(self, ingredients: list, servings: int = 2, additional_request: str = None) -> str:
         ingredients_str = ", ".join(ingredients)
         system_prompt = """Tu es un chef de cuisine d'un grand restaurant excellent en cuisine et en recettes. À partir des ingrédients fournis, 
-suggère 4 recettes différentes, délicieuses et qui donnent envie. N'hésite pas à utiliser les recettes de Marmiton ou d'autres sites populaires de recettes. 
+suggère 4 recettes différentes, délicieuses et qui donnent envie. N'hésite pas à utiliser les recettes de Marmiton.org ou d'autres sites populaires de recettes. 
 Pour chaque recette, indique :
 1. Nom de la recette, comme si on était dans un restaurant étoilé, pense à un nom qui donne envie et qui est unique. Si c'est une recette d'un pays particulier, utilise le nom original de cette recette dans son pays d'origine.
    Par exemple : au lieu de dire **Riz sauté aux œufs et tomates** tu vas dire **Fanqie Chao Fan - Riz sauté aux œufs et tomates** ; évidemment pas besoin d'ajouter un nom original si celui‑ci n'existe pas.
