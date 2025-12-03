@@ -189,7 +189,7 @@ class GUICookingAssistant(CookingUI):
             window=self.input_wrapper
         )
         
-        # Chat input
+        # Chat input (full-width, no send button)
         self.console_input = tk.Entry(
             self.input_wrapper,
             font=("Open Sans", 12),
@@ -206,22 +206,6 @@ class GUICookingAssistant(CookingUI):
         # Bind focus events for placeholder
         self.console_input.bind("<FocusIn>", self._on_input_focus_in)
         self.console_input.bind("<FocusOut>", self._on_input_focus_out)
-        
-        # Send button
-        self.send_button = tk.Button(
-            self.input_wrapper,
-            text="Send",
-            font=("Open Sans", 11, "normal"),
-            bg=self.primary_color,
-            fg="#ffffff",
-            activebackground=self.primary_color,
-            activeforeground="#ffffff",
-            borderwidth=0,
-            relief=tk.FLAT,
-            cursor="hand2",
-            command=self.process_command
-        )
-        self.send_button.pack(side=tk.RIGHT, padx=14, pady=10)  # Match HTML padding
         
         # Set up key bindings
         self.console_input.bind("<Return>", self.process_command)
@@ -318,6 +302,30 @@ class GUICookingAssistant(CookingUI):
         
         # Initial keyboard layout (will be rebuilt dynamically when shown)
         self._setup_numeric_keyboard()
+
+        # "Next" button for step execution (bottom of ingredients sidebar, hidden by default)
+        # Placed in the same column as ingredients & numeric keyboard for visual consistency.
+        self.next_button_container = tk.Frame(
+            self.ingredients_sidebar,
+            bg=self.bg_color
+        )
+        self.next_button = tk.Button(
+            self.next_button_container,
+            text="Next",
+            font=("Open Sans", 12, "normal"),
+            bg=self.primary_color,
+            fg="#ffffff",
+            activebackground=self.primary_color,
+            activeforeground="#ffffff",
+            borderwidth=0,
+            relief=tk.FLAT,
+            cursor="hand2",
+            padx=24,
+            pady=10,
+            command=self._on_next_button_click
+        )
+        self.next_button.pack(side=tk.RIGHT, padx=20, pady=16)
+        self.next_button_visible = False
         
         # Store reference for backward compatibility
         self.ingredients_box = self.ingredients_content
@@ -395,6 +403,29 @@ class GUICookingAssistant(CookingUI):
         
         # Auto-submit the value
         self.process_command()
+
+    def _on_next_button_click(self):
+        """UI handler for the bottom-right 'Next' button."""
+        if self.cooking_assistant:
+            try:
+                self.cooking_assistant._button_next()
+            except Exception as e:
+                print(f"Error handling 'Next' button: {e}")
+
+    # --- CookingUI extension: show/hide Next button ---
+    def show_next_button(self):
+        """Show the 'Next' button at the bottom of the ingredients sidebar during step execution."""
+        if not self.next_button_visible:
+            # Pack at the very bottom of the ingredients sidebar (below numeric keyboard if visible)
+            self.next_button_container.pack(side=tk.BOTTOM, fill="x")
+            self.next_button_visible = True
+            self.root.update_idletasks()
+
+    def hide_next_button(self):
+        """Hide the 'Next' button when not in step execution."""
+        if self.next_button_visible:
+            self.next_button_container.pack_forget()
+            self.next_button_visible = False
     
     def show_numeric_keyboard(self):
         """Show the numeric keyboard panel"""

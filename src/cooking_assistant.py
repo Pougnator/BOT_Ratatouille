@@ -495,7 +495,9 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
                         self.state_machine.transition_to(CookingState.COOKING_GUIDANCE)
                     
                 elif self.state_machine.current_state == CookingState.COOKING_GUIDANCE:
-                    # Steps are already displayed in _process_recipe_choice, just transition
+                    # Steps are already affichées, préparer l'UI pour l'exécution
+                    if hasattr(self.ui, "show_next_button"):
+                        self.ui.show_next_button()
                     self.state_machine.transition_to(CookingState.STEP_EXECUTION)
                     
                 elif self.state_machine.current_state == CookingState.STEP_EXECUTION:
@@ -507,9 +509,15 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
                         else:
                             self.state_machine.next_step()
                     else:
+                        # Sortie anticipée de l'exécution des étapes -> masquer le bouton Next
+                        if hasattr(self.ui, "hide_next_button"):
+                            self.ui.hide_next_button()
                         break
                         
                 elif self.state_machine.current_state == CookingState.COMPLETED:
+                    # Fin de recette -> masquer le bouton Next
+                    if hasattr(self.ui, "hide_next_button"):
+                        self.ui.hide_next_button()
                     self.ui.show_text("\n🎉 Félicitations! Vous avez terminé la recette!\n")
                     self.ui.show_text("Regalez-vous et ... bon appétit bien sûr! 🍽️\n")
                     # For now, just break - we can add "cook again" functionality later

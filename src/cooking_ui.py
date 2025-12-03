@@ -84,3 +84,12 @@ class CookingUI(ABC):
         """Hide the loading indicator"""
         pass
 
+    # Optional: controls specific to step execution UI (e.g., "Next" button)
+    def show_next_button(self):
+        """Optionally show a 'Next' control in the UI (default: no-op)."""
+        pass
+
+    def hide_next_button(self):
+        """Optionally hide the 'Next' control in the UI (default: no-op)."""
+        pass
+
