@@ -2,6 +2,7 @@ import os
 from openai import OpenAI
 from typing import Optional
 import json
+import time
 
 class LLMAgent:
     def __init__(self):
@@ -23,7 +24,7 @@ class LLMAgent:
             "content": content
         })
         
-    def get_response(self, user_input: Optional[str] = None, system_prompt: Optional[str] = None, functions=None) -> str:
+    def get_response(self, user_input: Optional[str] = None, system_prompt: Optional[str] = None, functions=None, model: str = "gpt-4o-mini") -> str:
         if system_prompt:
             system_prompt += "\n\nRéponds toujours en français, quelle que soit la langue de la question."
             self.add_system_message(system_prompt)
@@ -36,11 +37,13 @@ class LLMAgent:
             
         try:
             # Build request parameters
+            # Use more tokens for gpt-4o (better for detailed recipes)
+            max_tokens = 2000 if model == "gpt-4o" else 1000
             params = {
-                "model": "gpt-4o-mini",
+                "model": model,
                 "messages": self.conversation_history,
                 "temperature": 0.7,
-                "max_tokens": 1000
+                "max_tokens": max_tokens
             }
             
             # Add functions if provided
@@ -48,7 +51,18 @@ class LLMAgent:
                 params["functions"] = functions
                 params["function_call"] = {"name": functions[0]["name"]}
             
+            # Measure LLM call time
+            start_time = time.time()
             response = self.client.chat.completions.create(**params)
+            llm_time = time.time() - start_time
+            
+            # Log token usage if available
+            usage = getattr(response, 'usage', None)
+            if usage:
+                tokens_per_sec = usage.completion_tokens / llm_time if llm_time > 0 else 0
+                print(f"[TIMING] LLM call ({model}): {llm_time:.2f}s | Tokens: {usage.prompt_tokens} input + {usage.completion_tokens} output = {usage.total_tokens} total | Speed: {tokens_per_sec:.1f} tokens/s")
+            else:
+                print(f"[TIMING] LLM call ({model}): {llm_time:.2f}s")
             
             # Check if response is a function call
             message = response.choices[0].message
@@ -79,6 +93,7 @@ class LLMAgent:
             return f"Error communicating with LLM: {str(e)}"
             
     def propose_recipes(self, ingredients: list, servings: int = 2, additional_request: str = None) -> str:
+        start_time = time.time()
         ingredients_str = ", ".join(ingredients)
         system_prompt = """Tu es un chef de cuisine d'un grand restaurant excellent en cuisine et en recettes. À partir des ingrédients fournis, 
 suggère 4 recettes différentes, délicieuses et qui donnent envie. N'hésite pas à utiliser les recettes de Marmiton.org ou d'autres sites populaires de recettes. 
@@ -178,14 +193,26 @@ Les recettes doivent être en français.
         else:
             user_prompt += " What recipes can I make?"
         
-        response = self.get_response(user_prompt, system_prompt, functions=recipe_proposal_function)
+        # Save current conversation history and use a fresh one for recipe proposal
+        # This prevents accumulation of history that slows down the LLM
+        saved_history = self.conversation_history.copy()
+        self.conversation_history = []
+        
         try:
-            decoded_response = json.loads(response)
-            return decoded_response
-        except json.JSONDecodeError:
-            # Fallback to text parsing if JSON parsing fails
-            print(f"Error decoding JSON response: {response}")
-            return {"recipes": []}
+            # Use gpt-4o for recipe proposal (more intelligent model)
+            response = self.get_response(user_prompt, system_prompt, functions=recipe_proposal_function, model="gpt-4o")
+            try:
+                decoded_response = json.loads(response)
+                total_time = time.time() - start_time
+                print(f"[TIMING] propose_recipes total: {total_time:.2f}s")
+                return decoded_response
+            except json.JSONDecodeError:
+                # Fallback to text parsing if JSON parsing fails
+                print(f"Error decoding JSON response: {response}")
+                return {"recipes": []}
+        finally:
+            # Restore the original conversation history
+            self.conversation_history = saved_history
 
     # def explain_ingredients_naturally(self, ingredients: list, recipe_name: str, recipe_steps: list) -> str:
     #     system_prompt = "You are a helpful cooking assistant. Explain the ingredients I need for a recipe in a natural way that is easy to understand."
@@ -194,6 +221,7 @@ Les recettes doivent être en français.
         
 
     def get_recipe_steps(self, recipe_name: str, ingredients: list, servings: int = 2) -> dict:
+        start_time = time.time()
         # Ingredients are expected to be the structured list coming from recipe proposals:
         # [{"name": ..., "quantity": ..., "unit": ..., "preparation": ...}, ...]
         def _fmt_ing(ing) -> str:
@@ -360,6 +388,8 @@ Certains ingrédients peuvent être optionnels pour rendre la recette encore plu
 
         try:
             recipe_data = json.loads(response)
+            total_time = time.time() - start_time
+            print(f"[TIMING] get_recipe_steps total: {total_time:.2f}s")
             return recipe_data
         except json.JSONDecodeError:
             # Fallback to text parsing if JSON parsing fails

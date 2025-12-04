@@ -98,6 +98,8 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
             await asyncio.sleep(0.1)
             
     def propose_recipes(self):
+        import time
+        start_time = time.time()
         self.ui.show_text("\nAnalyse des ingrédients et recherche de recettes...\n")
         
         # Check if there's an additional recipe request
@@ -115,6 +117,8 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
         finally:
             # Hide loading indicator
             self.ui.hide_loading()
+            total_time = time.time() - start_time
+            print(f"[TIMING] propose_recipes (cooking_assistant) total: {total_time:.2f}s")
         
         # Clear the additional request after using it
         self.state_machine.clear_additional_recipe_request()
@@ -220,6 +224,7 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
         self.ui.show_text("\nPréparation")
         self.ui.show_loading("Préparation de la recette...")
         
+        start_time = time.time()
         try:
             # Use the ingredients specific to the chosen recipe (from LLM proposal)
             recipe_ingredients = recipe_content.get("ingredients", [])
@@ -231,6 +236,8 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
         finally:
             # Hide loading indicator
             self.ui.hide_loading()
+            total_time = time.time() - start_time
+            print(f"[TIMING] get_recipe_steps (cooking_assistant) total: {total_time:.2f}s")
         
         # Handle case where recipe_data might be a JSON string
         if isinstance(recipe_data, str):
@@ -428,6 +435,7 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
 
     def ask_question(self, question: str):
         """Handle a general cooking question in any state (from button or console)."""
+        start_time = time.time()
         # Build a general context string based on what we know
         context_parts = []
 
@@ -457,12 +465,14 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
             
             # Reuse guide_step as a generic Q&A with this context
             response = self.llm_agent.guide_step(context, question)
-            self.ui.show_text(f"\n💡 Conseil de cuisine:\n{response}\n")
+            self.ui.show_text(f"\n{response}\n")
         except Exception as e:
             self.ui.show_error(f"Erreur lors de la demande d'aide: {e}")
         finally:
             # Hide loading indicator
             self.ui.hide_loading()
+            total_time = time.time() - start_time
+            print(f"[TIMING] ask_question total: {total_time:.2f}s")
     
     async def run(self):
         try:
