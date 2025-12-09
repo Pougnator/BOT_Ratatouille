@@ -25,7 +25,9 @@ class StateMachine:
         self.additional_recipe_request = None
         
     def transition_to(self, new_state: CookingState):
+        old_state = self.current_state
         self.current_state = new_state
+        print(f"\n[SYSTEME] 🔄 CHANGEMENT D'ÉTAT : {old_state.value} → {new_state.value}")
         
     def set_servings(self, servings: int):
         self.servings = servings

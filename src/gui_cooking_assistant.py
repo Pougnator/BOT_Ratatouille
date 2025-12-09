@@ -18,13 +18,9 @@ if __name__ == "__main__":
     print("Running GUI Cooking Assistant directly")
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from src.states import StateMachine, CookingState
-    from src.cooking_assistant import CookingAssistant
+    from src.cooking_assistant_2 import CookingAssistant
     from src.cooking_ui import CookingUI
-else:
-    # When imported as part of the package, use relative imports
-    from .states import StateMachine, CookingState
-    from .cooking_assistant import CookingAssistant
-    from .cooking_ui import CookingUI
+
 
 class GUICookingAssistant(CookingUI):
     """GUI implementation of CookingUI interface"""
@@ -772,33 +768,11 @@ class GUICookingAssistant(CookingUI):
             return
             
         print("\n Robotatouille is starting...\n")
-        
-        # Check for API key first (most common issue)
-        import os
-        if not os.getenv("OPENAI_API_KEY"):
-            try:
-                # Try to load from .env file directly
-                from dotenv import load_dotenv
-                load_dotenv()
-                if not os.getenv("OPENAI_API_KEY"):
-                    print("OPENAI_API_KEY not found in environment or .env file!")
-                    print("Please create a .env file with your API key.\n")
-                    return
-            except ImportError:
-                print("python-dotenv package not installed.")
-                print("Please run: pip install python-dotenv\n")
-                return
-            except Exception as env_error:
-                print(f"Loading .env file: {str(env_error)}")
-                return
-        
-        # Debug message
-        print("API key found, initializing cooking assistant...\n")
-        
+        print("Hello Hello")
         # Define thread function
         def run_assistant():
             try:
-                self.root.after(0, lambda: print("Creating cooking assistant...\n"))
+                self.root.after(0, lambda: print("Creating one cooking assistant...\n"))
                 
                 # Create the cooking assistant with self as the UI
                 try:
@@ -1150,14 +1124,15 @@ class GUICookingAssistant(CookingUI):
         # Display user message in chat (always show user input)
         self._add_chat_message(command, is_user=True)
         
-        # Check if we have a callback waiting (from ask_text)
+        # Check if we have a callback waiting (from ask_text for legacy code)
+        # For the new chat loop, we always use on_user_entry via process_command
         if self.current_callback:
             # Hide the input prompt
             self.hide_input_prompt()
             # Hide numeric keyboard after input is submitted
             self.hide_numeric_keyboard()
             
-            # Call the callback with the user's input
+            # Call the callback with the user's input (for legacy code paths)
             callback = self.current_callback
             self.current_callback = None
             self.current_prompt = None
@@ -1167,7 +1142,7 @@ class GUICookingAssistant(CookingUI):
             self.root.after(0, lambda: callback(command))
             return
         
-        # Otherwise, handle as a regular command
+        # Otherwise, handle as a regular command or chat input
         
         # Process command
         if command.lower() == "help":
@@ -1191,52 +1166,11 @@ class GUICookingAssistant(CookingUI):
             else:
                 print("Assistant is not running; 'next' has no effect.")
         
-        elif command.lower().startswith("ask "):
-            # Console 'ask' command: general cooking question, handled by the assistant
-            question = command[4:].strip()
-            if not question:
-                print("Veuillez formuler une question après 'ask'.")
-            elif not self.cooking_assistant:
-                print("Assistant is not running; cannot ask a question.")
-            else:
-                # Lancer la question dans un thread séparé pour ne pas bloquer l'UI
-                try:
-                    import threading
-                    threading.Thread(
-                        target=lambda: self.cooking_assistant.ask_question(question),
-                        daemon=True
-                    ).start()
-                except Exception as e:
-                    print(f"Error handling 'ask' command: {e}")
-        elif command.lower() == "debug":
-            # Show debugging information
-            import os
-            import sys
-            
-            debug_info = f"""
-        
-DEBUGGING INFORMATION:
----------------------
-Current Directory: {os.getcwd()}
-Python Version: {sys.version}
-Path: {sys.path}
-OPENAI_API_KEY exists: {"Yes" if os.getenv("OPENAI_API_KEY") else "No"}
-.env file exists: {"Yes" if os.path.exists(os.path.join(os.getcwd(), ".env")) else "No"}
-Assistant thread active: {"Yes" if self.assistant_thread and self.assistant_thread.is_alive() else "No"}
-"""
-            print(debug_info)
         else:
-            # Considérer le texte libre comme une question à l'assistant
+            # Considérer le texte libre comme une entrée utilisateur pour la boucle de chat
+            # Toute entrée qui n'est pas une commande spéciale déclenche on_user_entry
             if self.cooking_assistant:
-                try:
-                    import threading
-                    question = command
-                    threading.Thread(
-                        target=lambda: self.cooking_assistant.ask_question(question),
-                        daemon=True
-                    ).start()
-                except Exception as e:
-                    print(f"Error handling command: {e}")
+                self.cooking_assistant.on_user_entry(command)
             else:
                 print("Unknown command. Type 'help' for a list of commands.")
 
