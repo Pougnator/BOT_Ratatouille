@@ -42,10 +42,18 @@ class CookingAssistant:
         # Storage for values associated with events
         self._event_data = {
             'ingredients_available': None,  # Stores data from propose_recipe_options
+            "missing_ingredients": None,  # Stores data from ingredients_selected
             'recipe_confirmed': None,  # Stores data from valider_et_detaille_recette
             'timer_started': None,  # Stores data from lancer_minuteur
             'user_input': None,  # Stores user text input
         }
+        # Storage for ingredients data
+        self.ingredients_data = {
+            'id_recette': None,
+            'ingredients': [],  # List of dicts with keys: name, quantity, unit, available
+            
+        }
+        
         
         # If running on a Raspberry Pi, set up button callbacks
         if self.hardware.is_raspi:
@@ -73,58 +81,58 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
 """
         self.ui.show_text(welcome_text)
         
-    def display_state(self):
-        state_name = self.state_machine.current_state.value.replace('_', ' ').title()
-        print(f"\nCurrent State: {state_name}\n")
+    # def display_state(self):
+    #     state_name = self.state_machine.current_state.value.replace('_', ' ').title()
+    #     print(f"\nCurrent State: {state_name}\n")
     
-    async def collect_servings(self):
-        """Collect number of servings - async version using UI callbacks"""
-        def handle_servings_input(input_text: str):
-            try:
-                servings = int(input_text) 
-                if servings > 0:
-                    self.state_machine.set_servings(servings)
-                    self.ui.show_success(f"On cuisine pour {servings} personnes")
-                    # Signal that we're done
-                    self._servings_collected.set()
-                else:
-                    self.ui.show_error("Veuillez entrer un nombre positif.")
-                    # Ask again
-                    self.ui.ask_text("Nombre de personnes: ", handle_servings_input)
-            except ValueError:
-                self.ui.show_error("Veuillez entrer un nombre valide.")
-                # Ask again
-                self.ui.ask_text("Nombre de personnes: ", handle_servings_input)
+    # async def collect_servings(self):
+    #     """Collect number of servings - async version using UI callbacks"""
+    #     def handle_servings_input(input_text: str):
+    #         try:
+    #             servings = int(input_text) 
+    #             if servings > 0:
+    #                 self.state_machine.set_servings(servings)
+    #                 self.ui.show_success(f"On cuisine pour {servings} personnes")
+    #                 # Signal that we're done
+    #                 self._servings_collected.set()
+    #             else:
+    #                 self.ui.show_error("Veuillez entrer un nombre positif.")
+    #                 # Ask again
+    #                 self.ui.ask_text("Nombre de personnes: ", handle_servings_input)
+    #         except ValueError:
+    #             self.ui.show_error("Veuillez entrer un nombre valide.")
+    #             # Ask again
+    #             self.ui.ask_text("Nombre de personnes: ", handle_servings_input)
         
-        # self.ui.show_text("Pour combien de personnes voulez-vous cuisiner?\n")
-        self._servings_collected = threading.Event()
-        self.ui.ask_text("Pour combien de personnes voulez-vous cuisiner?", handle_servings_input)
+    #     # self.ui.show_text("Pour combien de personnes voulez-vous cuisiner?\n")
+    #     self._servings_collected = threading.Event()
+    #     self.ui.ask_text("Pour combien de personnes voulez-vous cuisiner?", handle_servings_input)
         
-        # Wait for the callback to complete
-        while not self._servings_collected.is_set():
-            await asyncio.sleep(0.1)
+    #     # Wait for the callback to complete
+    #     while not self._servings_collected.is_set():
+    #         await asyncio.sleep(0.1)
     
-    async def collect_ingredients(self):
-        """Collect ingredients - async version using UI callbacks"""
-        def handle_ingredients_input(input_text: str):
-            ingredients = [ing.strip() for ing in input_text.split(',') if ing.strip()]
-            if ingredients:
-                self.state_machine.add_ingredients(ingredients)
-                self.ui.show_success(f"J'ai ajouté {len(ingredients)} ingrédients")
-                self._ingredients_collected.set()
-            else:
-                self.ui.show_error("Aucun ingrédient fourni. Veuillez réessayer.")
-                # Ask again
-                self.ui.ask_text("Vos ingrédients", handle_ingredients_input)
+    # async def collect_ingredients(self):
+    #     """Collect ingredients - async version using UI callbacks"""
+    #     def handle_ingredients_input(input_text: str):
+    #         ingredients = [ing.strip() for ing in input_text.split(',') if ing.strip()]
+    #         if ingredients:
+    #             self.state_machine.add_ingredients(ingredients)
+    #             self.ui.show_success(f"J'ai ajouté {len(ingredients)} ingrédients")
+    #             self._ingredients_collected.set()
+    #         else:
+    #             self.ui.show_error("Aucun ingrédient fourni. Veuillez réessayer.")
+    #             # Ask again
+    #             self.ui.ask_text("Vos ingrédients", handle_ingredients_input)
         
-        self.ui.show_text("Quels ingrédients avez-vous sous la main?")
-        # self.ui.show_text("Entrez les ingrédients séparés par des virgules (par exemple: oeufs, riz, tomates)")
-        self._ingredients_collected = threading.Event()
-        self.ui.ask_text("Entrez les ingrédients séparés par des virgules (par exemple: oeufs, riz, tomates)", handle_ingredients_input)
+    #     self.ui.show_text("Quels ingrédients avez-vous sous la main?")
+    #     # self.ui.show_text("Entrez les ingrédients séparés par des virgules (par exemple: oeufs, riz, tomates)")
+    #     self._ingredients_collected = threading.Event()
+    #     self.ui.ask_text("Entrez les ingrédients séparés par des virgules (par exemple: oeufs, riz, tomates)", handle_ingredients_input)
         
-        # Wait for the callback to complete
-        while not self._ingredients_collected.is_set():
-            await asyncio.sleep(0.1)
+    #     # Wait for the callback to complete
+    #     while not self._ingredients_collected.is_set():
+    #         await asyncio.sleep(0.1)
 
     def on_user_entry(self, input_text: str):
         """Handle user input - store it and signal the event"""
@@ -163,6 +171,39 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
                 
                 self.ui.show_text(recipe_text)
 
+    def _store_ingredients_data(self, recipes_data: dict):
+        """Store ingredients data from a recipe."""
+
+        if recipes_data.get('recettes'):
+            for idx, recette in enumerate(recipes_data['recettes'], start=1):
+                ingredients_complets = recette.get('ingredients', [])
+                ingredients_manquants = recette.get('ingredients_manquants', [])
+        
+            # Convert missing ingredients to a set for faster lookup
+            missing_set = set(ingredients_manquants)
+            
+            # First, populate with available ingredients (in complet but not in missing)
+            for ingredient_name in ingredients_complets:
+                if ingredient_name not in missing_set:
+                    self.ingredients_data['ingredients'].append({
+                        'name': ingredient_name,
+                        'quantity': '',  # Not available in ingredients_complets (List[str])
+                        'unit': '',  # Not available in ingredients_complets (List[str])
+                        'available': True
+                    })
+        
+        # Then, add missing ingredients with available=False
+        for ingredient_name in ingredients_manquants:
+            self.ingredients_data['ingredients'].append({
+                'name': ingredient_name,
+                'quantity': '',  # Not available in ingredients_manquants (List[str])
+                'unit': '',  # Not available in ingredients_manquants (List[str])
+                'available': False
+            })
+        
+        available_count = len(ingredients_complets) - len(ingredients_manquants)
+        print(f"Ingredients data stored: {available_count} available, {len(ingredients_manquants)} missing")
+     
     def _display_recipe_steps(self, recipe_data: dict):
         """Display recipe steps in a nicely formatted way.
         
@@ -185,49 +226,10 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
         steps = recipe_data.get('steps', [])
         self.ui.show_text("📝 Vue d'ensemble des étapes :\n")
         for idx, step in enumerate(steps, start=1):
-            self.ui.show_text(f"  {idx}. {step}")
+            self.ui.show_text(f"  {int(idx)}. {step}")
         self.ui.show_text("")
         
-        # Display detailed technical steps
-        details_techniques = recipe_data.get('details_techniques', [])
-        self.ui.show_text(f"\n🔧 Étapes détaillées ({len(details_techniques)} étapes) :\n")
-        self.ui.show_text(f"{'-'*80}\n")
-        
-        # Sort steps by numero to ensure correct order
-        sorted_steps = sorted(details_techniques, key=lambda x: x.get('numero', 0))
-        
-        for step in sorted_steps:
-            numero = step.get('numero', 0)
-            description = step.get('description', '')
-            conseil = step.get('conseil', '')
-            duree = step.get('duree_estimee_minutes', 0)
-            timer_necessaire = step.get('timer_necessaire', False)
-            dependencies = step.get('dependencies', [])
-            
-            # Step header
-            self.ui.show_text(f"\n📍 Étape {numero}")
-            self.ui.show_text(f"{'-'*40}")
-            
-            # Description
-            self.ui.show_text(f"  {description}")
-            
-            # Duration
-            self.ui.show_text(f"  ⏱️  Durée estimée : {duree} minute{'s' if duree > 1 else ''}")
-            
-            # Timer indicator
-            timer_text = "⏰ Minuteur recommandé" if timer_necessaire else "⏰ Minuteur non nécessaire"
-            self.ui.show_text(f"  {timer_text}")
-            
-            # Dependencies
-            deps_str = ", ".join(dependencies) if dependencies else "Aucune"
-            self.ui.show_text(f"  🔗 Dépend de : {deps_str}")
-            
-            # Conseil (tip)
-            self.ui.show_text(f"  💡 Conseil : {conseil}")
-            
-            self.ui.show_text("")
-        
-        self.ui.show_text(f"{'-'*80}\n")
+       
 
     def propose_recipes(self):
         import time
@@ -659,6 +661,7 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
                     self._events['ingredients_available'].set()
                     # Display recipes using dedicated method
                     self._display_recipes(data)
+                    self._store_ingredients_data(data)
                     # Transition vers RECIPE_PROPOSAL si on est en STARTING (le log sera fait par transition_to)
                     if self.state_machine.current_state == CookingState.STARTING:
                         self.state_machine.transition_to(CookingState.RECIPE_PROPOSAL)
@@ -707,7 +710,7 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
                     
                     # Display the recipe steps nicely in the UI
                     self._display_recipe_steps(decoded_recipe)
-                    
+                    self.ui.show_ingredients(self.ingredients_data['ingredients'])
                     # Transition vers COOKING_GUIDANCE (le log sera fait par transition_to)
                     self.state_machine.transition_to(CookingState.COOKING_GUIDANCE)
                     self.agent.notify_llm_function_completed("La recette a été confirmée et les étapes détaillées ont été générées", "valider_et_detaille_recette")
@@ -782,76 +785,76 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
         #     self.timer.cleanup()
         #     self.ui.show_text("\nMerci d'avoir fait confiance à Robotatouille! A la prochaine! 👋\n")
             
-    def _generate_gantt_chart(self, steps_data):
-        """
-        Génère des données au format Gantt Project à partir des étapes détaillées
-        """
-        import json
-        from datetime import datetime, timedelta
+    # def _generate_gantt_chart(self, steps_data):
+    #     """
+    #     Génère des données au format Gantt Project à partir des étapes détaillées
+    #     """
+    #     import json
+    #     from datetime import datetime, timedelta
         
-        # Initialiser les données de base du projet Gantt
-        gantt_data = {
-            "tasks": [],
-            "resources": [],
-            "roles": []
-        }
+    #     # Initialiser les données de base du projet Gantt
+    #     gantt_data = {
+    #         "tasks": [],
+    #         "resources": [],
+    #         "roles": []
+    #     }
         
-        # Définir la date et heure de début (maintenant)
-        start_time = datetime.now()
+    #     # Définir la date et heure de début (maintenant)
+    #     start_time = datetime.now()
         
-        # Pour chaque étape, créer une tâche Gantt
-        for i, step in enumerate(steps_data):
-            # Extraire les informations nécessaires en s'assurant que les données sont valides
-            step_id = str(step.get("id", f"task{i+1}")) if isinstance(step, dict) else f"task{i+1}"
+    #     # Pour chaque étape, créer une tâche Gantt
+    #     for i, step in enumerate(steps_data):
+    #         # Extraire les informations nécessaires en s'assurant que les données sont valides
+    #         step_id = str(step.get("id", f"task{i+1}")) if isinstance(step, dict) else f"task{i+1}"
             
-            # S'assurer que le nom de la tâche est une chaîne courte (pas un objet JSON complet)
-            if isinstance(step, dict):
-                step_name = str(step.get("description", f"Étape {i+1}"))
-            else:
-                step_name = str(step)[:100]  # Limiter la longueur à 100 caractères
+    #         # S'assurer que le nom de la tâche est une chaîne courte (pas un objet JSON complet)
+    #         if isinstance(step, dict):
+    #             step_name = str(step.get("description", f"Étape {i+1}"))
+    #         else:
+    #             step_name = str(step)[:100]  # Limiter la longueur à 100 caractères
                 
-            # Tâche standardisée
-            task = {
-                "id": step_id,
-                "name": step_name,
-                "start": start_time.strftime("%Y-%m-%d %H:%M"),
-                "duration": step.get("duration_minutes", 5) if isinstance(step, dict) else 5,
-                "complete": 0,
-                "predecessors": step.get("dependencies", []) if isinstance(step, dict) else []
-            }
-            # Avancer l'heure de début pour la prochaine tâche
-            if isinstance(step, dict):
-                duration = step.get("duration_minutes", 5)
-            else:
-                duration = 5
+    #         # Tâche standardisée
+    #         task = {
+    #             "id": step_id,
+    #             "name": step_name,
+    #             "start": start_time.strftime("%Y-%m-%d %H:%M"),
+    #             "duration": step.get("duration_minutes", 5) if isinstance(step, dict) else 5,
+    #             "complete": 0,
+    #             "predecessors": step.get("dependencies", []) if isinstance(step, dict) else []
+    #         }
+    #         # Avancer l'heure de début pour la prochaine tâche
+    #         if isinstance(step, dict):
+    #             duration = step.get("duration_minutes", 5)
+    #         else:
+    #             duration = 5
                 
-            start_time = start_time + timedelta(minutes=duration)
+    #         start_time = start_time + timedelta(minutes=duration)
             
-            gantt_data["tasks"].append(task)
+    #         gantt_data["tasks"].append(task)
         
-        return gantt_data
+    #     return gantt_data
         
-    # Méthode d'affichage du Gantt supprimée
+    # # Méthode d'affichage du Gantt supprimée
         
-    def _save_gantt_chart(self, gantt_data, recipe_name):
-        """
-        Sauvegarde le diagramme de Gantt dans un fichier JSON
-        """
-        import json
-        import os
-        from datetime import datetime
+    # def _save_gantt_chart(self, gantt_data, recipe_name):
+    #     """
+    #     Sauvegarde le diagramme de Gantt dans un fichier JSON
+    #     """
+    #     import json
+    #     import os
+    #     from datetime import datetime
         
-        # Créer un dossier pour les diagrammes s'il n'existe pas
-        gantt_dir = "gantt_charts"
-        os.makedirs(gantt_dir, exist_ok=True)
+    #     # Créer un dossier pour les diagrammes s'il n'existe pas
+    #     gantt_dir = "gantt_charts"
+    #     os.makedirs(gantt_dir, exist_ok=True)
         
-        # Générer un nom de fichier basé sur le nom de la recette et la date
-        safe_name = "".join([c if c.isalnum() else "_" for c in recipe_name])
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"{gantt_dir}/{safe_name}_{timestamp}.json"
+    #     # Générer un nom de fichier basé sur le nom de la recette et la date
+    #     safe_name = "".join([c if c.isalnum() else "_" for c in recipe_name])
+    #     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    #     filename = f"{gantt_dir}/{safe_name}_{timestamp}.json"
         
-        # Écrire les données au format JSON
-        with open(filename, "w", encoding="utf-8") as f:
-            json.dump(gantt_data, f, indent=2, ensure_ascii=False)
+    #     # Écrire les données au format JSON
+    #     with open(filename, "w", encoding="utf-8") as f:
+    #         json.dump(gantt_data, f, indent=2, ensure_ascii=False)
             
-        return filename
+    #     return filename
