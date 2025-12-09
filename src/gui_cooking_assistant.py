@@ -992,11 +992,12 @@ class GUICookingAssistant(CookingUI):
             ingredients_text += "\n"
         
         # Update the ingredients panel
+        print(("Showing the ingredients in the ingredients sidebar"))
         self.set_ingredients(ingredients_text)
         
-        # Also show in console
-        self.show_text("Ingrédients:\n\n")
-        self.show_text(ingredients_text)
+        # # Also show in console
+        # self.show_text("Ingrédients:\n\n")
+        # self.show_text(ingredients_text)
     
     def show_steps(self, steps: List[str], current_step: int = 0):
         """Display cooking steps"""

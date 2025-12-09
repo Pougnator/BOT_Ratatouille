@@ -38,9 +38,10 @@ class EtapePreparation(BaseModel):
 
 class RecetteSteps(BaseModel):
     titre: str = Field(description="Le nom de la recette")
+    phrase_intro: str = Field(description="Une phrase courte pour introduire la recette")
     steps: List[str] = Field(description="Liste résumée des étapes")
     details_techniques: List[EtapePreparation] = Field(description="Détails techniques structurés pour l'application")
-
+    conseil_gourmand: str = Field(description="Conseil gourmand final court à l'utilsateur sur la recette avant de passer à la préparation")
 
 # ============================================================================
 # INSTRUCTION SYSTÈME
@@ -98,7 +99,7 @@ def lancer_minuteur(duree_secondes: int, label: str):
 
 def valider_et_detaille_recette(id_recette: str, recette_detaillee: RecetteSteps):
     """
-    Valide le choix de l'utilisateur et génère les étapes détaillées.
+    Valide le choix de l'utilisateur et génère les étapes détaillées, ainsi qu'une phrase d'introduction de la recette et un conseil gourmand final.
     Change l'état vers 'cooking_guidance'.
     
     Note: Cette fonction ne devrait pas modifier l'état directement.
@@ -180,6 +181,8 @@ class LLMAgent:
                         "recipe_confirmed": True,  # Flag pour indiquer que la recette est confirmée
                         "id_recette": id_recette,
                         "titre": recette_detaillee.get("titre") if recette_detaillee else None,
+                        "phrase_intro": recette_detaillee.get("phrase_intro") if recette_detaillee else None,
+                        "conseil_gourmand": recette_detaillee.get("conseil_gourmand") if recette_detaillee else None,
                         "steps": recette_detaillee.get("steps") if recette_detaillee else None,
                         "details_techniques": []
                     }

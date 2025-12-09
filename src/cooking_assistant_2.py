@@ -216,18 +216,22 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
         if not recipe_data:
             return
         
+
         # Display recipe title
         titre = recipe_data.get('titre', 'Recette')
-        self.ui.show_text(f"\n{'='*80}")
-        self.ui.show_text(f"📋 {titre}")
-        self.ui.show_text(f"{'='*80}\n")
+        self.ui.show_text(f"{titre}")
+        if recipe_data.get('phrase_intro'):
+            self.ui.show_text(f"{recipe_data.get('phrase_intro')}")
         
         # Display step summaries
         steps = recipe_data.get('steps', [])
-        self.ui.show_text("📝 Vue d'ensemble des étapes :\n")
+       
         for idx, step in enumerate(steps, start=1):
             self.ui.show_text(f"  {int(idx)}. {step}")
         self.ui.show_text("")
+        
+        if recipe_data.get('conseil_gourmand'):
+            self.ui.show_text(f"{recipe_data.get('conseil_gourmand')}")
         
        
 
@@ -306,144 +310,144 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
         # Retourner le résultat du traitement
         return self._recipe_choice_result
     
-    def _process_recipe_choice(self, choice: str):
-        """Process the recipe choice (shared logic for UI and CLI)"""
-        if not choice:
-            print("Veuillez entrer un numéro de recette.")
-            return False
+    # def _process_recipe_choice(self, choice: str):
+    #     """Process the recipe choice (shared logic for UI and CLI)"""
+    #     if not choice:
+    #         print("Veuillez entrer un numéro de recette.")
+    #         return False
 
-        choice_str = choice.strip()
+    #     choice_str = choice.strip()
 
-        # If the choice is a number, it is a recipe index. So it should be between 1 and 4
-        # In which case we use it to select the recipe from the proposed recipes list
-        if choice_str.isdigit():
-            recipe_index = int(choice_str) - 1
-            if 0 <= recipe_index < len(self.state_machine.proposed_recipes):
-                # Récupérer le contenu de la recette choisie
-                recipe_content = self.state_machine.proposed_recipes[recipe_index]
-                self.state_machine.selected_recipe = recipe_content
-                recipe_name = recipe_content.get("name", "Error: Recipe name not found")
-            else:
-                self.ui.show_error(f"Numéro de recette invalide. Veuillez choisir une recette de 1 à {len(self.state_machine.proposed_recipes)}")
-                return False
+    #     # If the choice is a number, it is a recipe index. So it should be between 1 and 4
+    #     # In which case we use it to select the recipe from the proposed recipes list
+    #     if choice_str.isdigit():
+    #         recipe_index = int(choice_str) - 1
+    #         if 0 <= recipe_index < len(self.state_machine.proposed_recipes):
+    #             # Récupérer le contenu de la recette choisie
+    #             recipe_content = self.state_machine.proposed_recipes[recipe_index]
+    #             self.state_machine.selected_recipe = recipe_content
+    #             recipe_name = recipe_content.get("name", "Error: Recipe name not found")
+    #         else:
+    #             self.ui.show_error(f"Numéro de recette invalide. Veuillez choisir une recette de 1 à {len(self.state_machine.proposed_recipes)}")
+    #             return False
         
-        # If the choice is not a number, it is either an additional prompt (starting with 0)
-        # or nothing, we continue the loop.
-        else:
-            # Check if user wants more recipes (0 + optional extra prompt)
-            if choice_str.startswith('0'):
-                additional_prompt = choice_str[1:].strip()
-                self.ui.show_text("\nRecherche de plus de recettes...\n")
+    #     # If the choice is not a number, it is either an additional prompt (starting with 0)
+    #     # or nothing, we continue the loop.
+    #     else:
+    #         # Check if user wants more recipes (0 + optional extra prompt)
+    #         if choice_str.startswith('0'):
+    #             additional_prompt = choice_str[1:].strip()
+    #             self.ui.show_text("\nRecherche de plus de recettes...\n")
                 
-                # Go back to the recipe proposal state
-                self.state_machine.transition_to(CookingState.RECIPE_PROPOSAL)
+    #             # Go back to the recipe proposal state
+    #             self.state_machine.transition_to(CookingState.RECIPE_PROPOSAL)
                 
-                # If there's an additional prompt, store it for the LLM to use
-                if additional_prompt:
-                    self.state_machine.additional_recipe_request = additional_prompt
-                    self.ui.show_text(f"Trouves d'autres recettes differentes de celles déjà proposées, avec précision: {additional_prompt}\n")
-                else:
-                    self.state_machine.additional_recipe_request = "Trouve des recettes differentes de celles déjà proposées"
-                return False
-            else:
-                # self.ask_question(choice_str)
-                return False
+    #             # If there's an additional prompt, store it for the LLM to use
+    #             if additional_prompt:
+    #                 self.state_machine.additional_recipe_request = additional_prompt
+    #                 self.ui.show_text(f"Trouves d'autres recettes differentes de celles déjà proposées, avec précision: {additional_prompt}\n")
+    #             else:
+    #                 self.state_machine.additional_recipe_request = "Trouve des recettes differentes de celles déjà proposées"
+    #             return False
+    #         else:
+    #             # self.ask_question(choice_str)
+    #             return False
         
-        # À partir d'ici, on sait qu'on a une recette valide avec:
-        # - recipe_content : le dictionnaire de la recette choisie
-        # - recipe_name    : le nom de la recette
+    #     # À partir d'ici, on sait qu'on a une recette valide avec:
+    #     # - recipe_content : le dictionnaire de la recette choisie
+    #     # - recipe_name    : le nom de la recette
         
-        # Get recipe steps from LLM
-        # Small heading before loading indicator
-        self.ui.show_text("\nPréparation")
-        self.ui.show_loading("Préparation de la recette...")
+    #     # Get recipe steps from LLM
+    #     # Small heading before loading indicator
+    #     self.ui.show_text("\nPréparation")
+    #     self.ui.show_loading("Préparation de la recette...")
         
-        start_time = time.time()
-        try:
-            # Use the ingredients specific to the chosen recipe (from LLM proposal)
-            recipe_ingredients = recipe_content.get("ingredients", [])
-            recipe_data = self.agent.get_recipe_steps(
-                recipe_name,
-                recipe_ingredients,
-                self.state_machine.servings
-            )
-        finally:
-            # Hide loading indicator
-            self.ui.hide_loading()
-            total_time = time.time() - start_time
-            print(f"[TIMING] get_recipe_steps (cooking_assistant) total: {total_time:.2f}s")
+    #     start_time = time.time()
+    #     try:
+    #         # Use the ingredients specific to the chosen recipe (from LLM proposal)
+    #         recipe_ingredients = recipe_content.get("ingredients", [])
+    #         recipe_data = self.agent.get_recipe_steps(
+    #             recipe_name,
+    #             recipe_ingredients,
+    #             self.state_machine.servings
+    #         )
+    #     finally:
+    #         # Hide loading indicator
+    #         self.ui.hide_loading()
+    #         total_time = time.time() - start_time
+    #         print(f"[TIMING] get_recipe_steps (cooking_assistant) total: {total_time:.2f}s")
         
-        # Handle case where recipe_data might be a JSON string
-        if isinstance(recipe_data, str):
-            import json
-            try:
-                recipe_data = json.loads(recipe_data)
-            except json.JSONDecodeError:
-                self.ui.show_error("Erreur lors du parsing de la recette.")
-                return False
+    #     # Handle case where recipe_data might be a JSON string
+    #     if isinstance(recipe_data, str):
+    #         import json
+    #         try:
+    #             recipe_data = json.loads(recipe_data)
+    #         except json.JSONDecodeError:
+    #             self.ui.show_error("Erreur lors du parsing de la recette.")
+    #             return False
 
-        # Display ingredients
-        ingredients_list = recipe_data.get("ingredients", [])
-        if ingredients_list:
-            self.ui.show_ingredients(ingredients_list)
+    #     # Display ingredients
+    #     ingredients_list = recipe_data.get("ingredients", [])
+    #     if ingredients_list:
+    #         self.ui.show_ingredients(ingredients_list)
         
-        # Set recipe steps and name
-        steps_data = recipe_data.get("steps", [])
+    #     # Set recipe steps and name
+    #     steps_data = recipe_data.get("steps", [])
         
-        # Extract just the description for display in steps
-        steps = []
-        for step in steps_data:
-            if isinstance(step, dict):
-                steps.append(step.get("description", ""))
-            else:
-                steps.append(step)
+    #     # Extract just the description for display in steps
+    #     steps = []
+    #     for step in steps_data:
+    #         if isinstance(step, dict):
+    #             steps.append(step.get("description", ""))
+    #         else:
+    #             steps.append(step)
         
-        # Store steps in state machine (display_cooking_steps will show them when entering COOKING_GUIDANCE)
-        self.state_machine.set_recipe_steps(steps)
-        self.state_machine.selected_recipe = recipe_data.get("title", recipe_name)
+    #     # Store steps in state machine (display_cooking_steps will show them when entering COOKING_GUIDANCE)
+    #     self.state_machine.set_recipe_steps(steps)
+    #     self.state_machine.selected_recipe = recipe_data.get("title", recipe_name)
         
-        # Store the detailed steps for Gantt chart
-        self.state_machine.detailed_steps = steps_data
+    #     # Store the detailed steps for Gantt chart
+    #     self.state_machine.detailed_steps = steps_data
         
-        # Générer le diagramme de Gantt (uniquement à partir des descriptions d'étapes)
-        # Éviter de passer l'objet recipe_data complet qui peut corrompre le JSON
-        steps_for_gantt = []
-        for i, step in enumerate(steps_data):
-            if isinstance(step, dict):
-                # Créer une copie simplifiée de l'étape pour éviter la corruption
-                steps_for_gantt.append({
-                    "id": step.get("id", str(i+1)),
-                    "description": step.get("description", ""),
-                    "duration_minutes": step.get("duration_minutes", 5),
-                    "dependencies": step.get("dependencies", [])
-                })
-            else:
-                # Pour les étapes en chaîne de caractères
-                steps_for_gantt.append({
-                    "id": str(i+1),
-                    "description": str(step),
-                    "duration_minutes": 5,
-                    "dependencies": []
-                })
+    #     # Générer le diagramme de Gantt (uniquement à partir des descriptions d'étapes)
+    #     # Éviter de passer l'objet recipe_data complet qui peut corrompre le JSON
+    #     steps_for_gantt = []
+    #     for i, step in enumerate(steps_data):
+    #         if isinstance(step, dict):
+    #             # Créer une copie simplifiée de l'étape pour éviter la corruption
+    #             steps_for_gantt.append({
+    #                 "id": step.get("id", str(i+1)),
+    #                 "description": step.get("description", ""),
+    #                 "duration_minutes": step.get("duration_minutes", 5),
+    #                 "dependencies": step.get("dependencies", [])
+    #             })
+    #         else:
+    #             # Pour les étapes en chaîne de caractères
+    #             steps_for_gantt.append({
+    #                 "id": str(i+1),
+    #                 "description": str(step),
+    #                 "duration_minutes": 5,
+    #                 "dependencies": []
+    #             })
         
-        gantt_data = self._generate_gantt_chart(steps_for_gantt)
-        recipe_title = recipe_data.get("title", recipe_name)
-        gantt_file = self._save_gantt_chart(gantt_data, recipe_title)
+    #     gantt_data = self._generate_gantt_chart(steps_for_gantt)
+    #     recipe_title = recipe_data.get("title", recipe_name)
+    #     gantt_file = self._save_gantt_chart(gantt_data, recipe_title)
         
-        # Créer la visualisation Plotly interactive
-        result = self.gantt_visualizer.process_gantt_file(
-            gantt_file,
-            recipe_name=recipe_title
-        )
+    #     # Créer la visualisation Plotly interactive
+    #     result = self.gantt_visualizer.process_gantt_file(
+    #         gantt_file,
+    #         recipe_name=recipe_title
+    #     )
         
-        print("\n Diagramme de Gantt généré\n")
-        print(gantt_data)
+    #     print("\n Diagramme de Gantt généré\n")
+    #     print(gantt_data)
         
-        # Display steps immediately after receiving them
-        self.ui.show_text("\n✓ Recette préparée avec succès!\n")
-        self.display_cooking_steps()
+    #     # Display steps immediately after receiving them
+    #     self.ui.show_text("\n✓ Recette préparée avec succès!\n")
+    #     self.display_cooking_steps()
         
-        return True
+    #     return True
         
     def display_cooking_steps(self):
         if not self.state_machine.recipe_steps:
@@ -687,6 +691,8 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
                     decoded_recipe = {
                         'id_recette': data.get('id_recette'),
                         'titre': data.get('titre'),
+                        'phrase_intro': data.get('phrase_intro'),
+                        'conseil_gourmand': data.get('conseil_gourmand'),
                         'steps': data.get('steps', []),  # List of step summaries
                         'details_techniques': []
                     }
@@ -701,6 +707,7 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
                                 'duree_estimee_minutes': detail.get('duree_estimee_minutes', 0),
                                 'timer_necessaire': detail.get('timer_necessaire', False),
                                 'dependencies': detail.get('dependencies', [])
+                                
                             }
                             decoded_recipe['details_techniques'].append(decoded_step)
                     
