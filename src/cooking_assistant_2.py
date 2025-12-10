@@ -414,6 +414,9 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
                         self._events['timer_started'].set()
                         self.agent.notify_llm_function_completed("Le minuteur a été lancé", "lancer_minuteur")
                 if 'recipe_confirmed' in data and data.get('recipe_confirmed'):
+                    #sauvegarder l'id de la recette dans la machine à états
+                    self.state_machine.select_recipe(data.get('titre'))
+                    
                     # valider_et_detaille_recette was called
                     # Decode the recipe steps data according to RecetteSteps and EtapePreparation models
                     decoded_recipe = {
@@ -449,7 +452,19 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
                     # Transition vers COOKING_GUIDANCE (le log sera fait par transition_to)
                     self.state_machine.transition_to(CookingState.COOKING_GUIDANCE)
                     self.agent.notify_llm_function_completed("La recette a été confirmée et les étapes détaillées ont été générées", "valider_et_detaille_recette")
-            
+            if self.state_machine.current_state == CookingState.COOKING_GUIDANCE:
+                self.state_machine.transition_to(CookingState.STEP_EXECUTION)
+                cooking_steps = []
+                for step in decoded_recipe['details_techniques']:
+                    cooking_steps.append(step.get('description'))
+                self.state_machine.set_recipe_steps(cooking_steps)
+                print("Etapes détaillés de la recette")
+                print (self.state_machine.recipe_steps)
+            if self.state_machine.current_state == CookingState.STEP_EXECUTION:
+                # self.state_machine.transition_to(CookingState.COOKING_GUIDANCE)
+                # self.display_cooking_steps()
+                self.execute_current_step()
+                self.agent.notify_llm_function_completed("L'étape a été exécutée", "executer_etape")
             # Display text response - process_command will handle next input via on_user_entry
             if text_response:
                 self.ui.show_text(f"{text_response}\n")

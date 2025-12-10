@@ -5,7 +5,7 @@ from states import StateMachine, CookingState
 from pydantic import BaseModel, Field
 from google.ai.generativelanguage_v1beta.types import content
 from dotenv import load_dotenv
-
+from enum import Enum
 # Charger les variables d'environnement depuis .env
 load_dotenv()
 
@@ -46,6 +46,14 @@ class RecetteSteps(BaseModel):
     steps: List[str] = Field(description="Liste résumée des étapes")
     details_techniques: List[EtapePreparation] = Field(description="Détails techniques structurés pour l'application")
     conseil_gourmand: str = Field(description="Conseil gourmand final court à l'utilsateur sur la recette avant de passer à la préparation")
+
+class NavigationAction(str, Enum):
+    DEMARRER = "DEMARRER"
+    SUIVANT = "SUIVANT"
+    PRECEDENT = "PRECEDENT"
+    REPETER = "REPETER"
+    STOP = "STOP"
+
 
 # ============================================================================
 # INSTRUCTION SYSTÈME
@@ -113,7 +121,46 @@ def valider_et_detaille_recette(id_recette: str, recette_detaillee: RecetteSteps
     # Le traitement réel se fait dans get_response() de LLMAgent
     return "Recette validée et étapes de récette générées et affichés au client"
 
+def navigation_pas_a_pas(action: NavigationAction):
+    """
+    Fonction pour contrôler l'affichage des étapes.
+    À appeler UNIQUEMENT si l'utilisateur confirme vouloir commencer ou continuer le guidage pas à pas de la recette.
+    """
+    global session_cooking
+    steps = session_cooking["steps"]
+    
+    if not session_cooking["is_active"] or not steps:
+        return "Aucune recette n'est active. Demandez à l'utilisateur de choisir une recette d'abord."
 
+    # Logique de navigation
+    idx = session_cooking["current_index"]
+    
+    if action == NavigationAction.DEMARRER:
+        session_cooking["current_index"] = 0
+        step = steps[0]
+        return f"[MODE GUIDAGE ACTIVÉ] Étape 1/{len(steps)} : {step['description']}. (Conseil: {step['conseil']})"
+
+    elif action == NavigationAction.SUIVANT:
+        if idx < len(steps) - 1:
+            session_cooking["current_index"] += 1
+            step = steps[session_cooking["current_index"]]
+            return f"Étape {step['numero']}/{len(steps)} : {step['description']}. (Conseil: {step['conseil']})"
+        else:
+            session_cooking["is_active"] = False # Fin de la recette
+            return "C'est terminé ! La recette est finie. Souhaitez-vous autre chose ?"
+
+    elif action == NavigationAction.PRECEDENT:
+        if idx > 0:
+            session_cooking["current_index"] -= 1
+            step = steps[session_cooking["current_index"]]
+            return f"Retour à l'étape {step['numero']} : {step['description']}"
+        else:
+            return "On est au tout début."
+            
+    elif action == NavigationAction.REPETER:
+        if idx == -1: return "On n'a pas encore commencé."
+        step = steps[idx]
+        return f"Je répète : {step['description']}"
 # ============================================================================
 # CLASSE LLM AGENT
 # ============================================================================

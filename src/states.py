@@ -38,14 +38,15 @@ class StateMachine:
     def set_proposed_recipes(self, recipes: list):
         self.proposed_recipes = recipes
         
-    def select_recipe(self, recipe_index: int):
-        if 0 <= recipe_index < len(self.proposed_recipes):
-            self.selected_recipe = self.proposed_recipes[recipe_index]
+    def select_recipe(self, recipe_title: str):
+        if recipe_title:
+            self.selected_recipe = recipe_title
             return True
-        return False
+        else:
+            return False
         
     def set_recipe_steps(self, steps: list):
-        self.recipe_steps = steps
+        self.recipe_steps = list(steps)  # Create a new list from steps
         self.current_step = 0
         
     def next_step(self):
