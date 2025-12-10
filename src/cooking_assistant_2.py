@@ -1,6 +1,7 @@
 import asyncio
 import threading
 import time
+from typing import Any
 from states import StateMachine, CookingState
 from llm_agent_2 import LLMAgent
 from timer import CookingTimer
@@ -15,7 +16,7 @@ class CookingAssistant:
         self.ui = ui
 
         self.state_machine = StateMachine()
-        self.agent = LLMAgent()
+        self.agent = LLMAgent(state_machine=self.state_machine)
 
         # Timer and hardware no longer depend on a console
         self.timer = CookingTimer(console=None)
@@ -120,20 +121,20 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
 
     def _store_ingredients_data(self, recipes_data: dict):
         """Store ingredients data from a recipe."""
-
+        # Clear only the ingredients list, not the entire dictionary
+        self.ingredients_data['ingredients'] = []
         if recipes_data.get('recettes'):
             for idx, recette in enumerate(recipes_data['recettes'], start=1):
                 ingredients = recette.get('ingredients', [])
 
-            for ing in ingredients:
-             
+                for ing in ingredients:
                     self.ingredients_data['ingredients'].append({
                         'name': ing.get('name'),
-                        'quantity': ing.get('quantity'), # Not available in ingredients_complets (List[str])
-                        'unit': ing.get('unit'),  # Not available in ingredients_complets (List[str])
+                        'quantity': ing.get('quantity'),
+                        'unit': ing.get('unit'),
                         'available': ing.get('available') 
                     })
-        print(f"Ingredients data stored: {len(ingredients)}")
+        print(f"Ingredients data stored: {len(self.ingredients_data['ingredients'])}")
      
     def _display_recipe_steps(self, recipe_data: dict):
         """Display recipe steps in a nicely formatted way.
@@ -201,40 +202,6 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
         # Store recipes for selection
         self.state_machine.set_proposed_recipes(recipes_list)
         
-    # async def confirm_recipe(self):
-    #     """Confirm recipe selection - async version using UI callbacks"""
-    #     txt_confirm_recipe = """
-    #     Quel recette voulez-vous cuisiner? 
-    #     Entrez le numéro de la recette (1-4). Entrez 0 + instructions additionnelles pour demander plus de recettes
-    #     """
-    
-
-    #     # Valeur et résultat du choix
-    #     self._recipe_choice_result = False
-    #     self._recipe_choice_value = None
-
-    #     # Event pour synchroniser la coroutine avec la réponse de l'utilisateur
-    #     self._recipe_confirmed = threading.Event()
-
-    #     def _on_user_input(value: str):
-    #         """Callback générique interne : stocke la valeur et réveille la coroutine.
-    #         On ne fait AUCUN traitement de recette ici pour éviter tout effet visuel étrange.
-    #         """
-    #         self._recipe_choice_value = value
-    #         self._recipe_confirmed.set()
-
-    #     # Demander le texte à l'utilisateur ; l'UI gère l'affichage de la bulle de réponse
-    #     self.ui.ask_text(txt_confirm_recipe, _on_user_input)
-
-    #     # Attendre que l'utilisateur ait répondu
-    #     while not self._recipe_confirmed.is_set():
-    #         await asyncio.sleep(0.1)
-
-    #     # Maintenant seulement, traiter le choix de recette
-    #     self._recipe_choice_result = self._process_recipe_choice(self._recipe_choice_value)
-
-    #     # Retourner le résultat du traitement
-    #     return self._recipe_choice_result
     
    
         
@@ -248,6 +215,7 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
         
     def execute_current_step(self):
         current_step = self.state_machine.get_current_step()
+        print(f"Current step: {current_step}")
         
         if not current_step:
             self.ui.show_text("C'est fini! Il ne reste plus d'étapes!\n")
@@ -271,24 +239,24 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
         # Clear any previous button events
         self._next_button_event.clear()
         
-        # Function to get input without blocking button presses (CLI legacy, now simplified for UI)
-        def get_interruptible_input():
-            # For now, in UI mode, we only support 'next' via button;
-            # you can later extend this to use UI.ask_text if needed.
-            while True:
-                if self._next_button_event.is_set():
-                    self._next_button_event.clear()
-                    return "next"
-                time.sleep(0.1)
+        # # Function to get input without blocking button presses (CLI legacy, now simplified for UI)
+        # def get_interruptible_input():
+        #     # For now, in UI mode, we only support 'next' via button;
+        #     # you can later extend this to use UI.ask_text if needed.
+        #     while True:
+        #         if self._next_button_event.is_set():
+        #             self._next_button_event.clear()
+        #             return "next"
+        #         time.sleep(0.1)
             
-        while True:
-            # Get input (might be interrupted by button press)
-            user_input = get_interruptible_input()
+        # while True:
+        #     # Get input (might be interrupted by button press)
+        #     user_input = get_interruptible_input()
             
-            if user_input == 'next':
-                return True
+        #     if user_input == 'next':
+        #         return True
           
-            # In UI-only mode, other text commands are not handled here yet
+        #     # In UI-only mode, other text commands are not handled here yet
                 
     def _setup_button_controls(self):
         """Set up button controls for GPIO pins."""
@@ -393,7 +361,7 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
                     self._events['ingredients_available'].set()
                     # Display recipes using dedicated method
                     self._display_recipes(data)
-                    self._store_ingredients_data(data)
+                    # Ne pas stocker les ingrédients ici - on les stockera seulement pour la recette sélectionnée
                     # Transition vers RECIPE_PROPOSAL si on est en STARTING (le log sera fait par transition_to)
                     if self.state_machine.current_state == CookingState.STARTING:
                         self.state_machine.transition_to(CookingState.RECIPE_PROPOSAL)
@@ -446,25 +414,62 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
                     self._event_data['recipe_confirmed'] = decoded_recipe
                     self._events['recipe_confirmed'].set()
                     
+                    # Récupérer les ingrédients de la recette sélectionnée depuis ingredients_available
+                    id_recette = decoded_recipe.get('id_recette')
+                    recipes_data = self._event_data.get('ingredients_available', {})
+                    if id_recette and recipes_data.get('recettes'):
+                        # Trouver la recette correspondante et stocker uniquement ses ingrédients
+                        for recette in recipes_data['recettes']:
+                            if recette.get('id') == id_recette:
+                                self.ingredients_data['id_recette'] = id_recette
+                                self.ingredients_data['ingredients'] = []
+                                try:
+                                    # Stocker uniquement les ingrédients de cette recette
+                                    for ing in recette.get('ingredients', []):
+                                        self.ingredients_data['ingredients'].append({
+                                            'name': ing.get('name'),
+                                            'quantity': ing.get('quantity'),
+                                            'unit': ing.get('unit'),
+                                            'available': ing.get('available')
+                                        })
+                                except Exception as e:
+                                    print(f"[SYSTEME] 🔴 Erreur lors de la récupération des ingrédients dans cooking_assistant_2: {e}")
+                                break
+                    
                     # Display the recipe steps nicely in the UI
                     self._display_recipe_steps(decoded_recipe)
                     self.ui.show_ingredients(self.ingredients_data['ingredients'])
                     # Transition vers COOKING_GUIDANCE (le log sera fait par transition_to)
                     self.state_machine.transition_to(CookingState.COOKING_GUIDANCE)
                     self.agent.notify_llm_function_completed("La recette a été confirmée et les étapes détaillées ont été générées", "valider_et_detaille_recette")
-            if self.state_machine.current_state == CookingState.COOKING_GUIDANCE:
-                self.state_machine.transition_to(CookingState.STEP_EXECUTION)
-                cooking_steps = []
-                for step in decoded_recipe['details_techniques']:
-                    cooking_steps.append(step.get('description'))
-                self.state_machine.set_recipe_steps(cooking_steps)
-                print("Etapes détaillés de la recette")
-                print (self.state_machine.recipe_steps)
-            if self.state_machine.current_state == CookingState.STEP_EXECUTION:
-                # self.state_machine.transition_to(CookingState.COOKING_GUIDANCE)
-                # self.display_cooking_steps()
-                self.execute_current_step()
-                self.agent.notify_llm_function_completed("L'étape a été exécutée", "executer_etape")
+                # Gérer la navigation pas à pas
+                if 'navigation_action' in data:
+                    action = data.get('navigation_action')
+                    if data.get('next_step'):
+                        if self.state_machine.next_step():
+                            
+                            self.execute_current_step()
+                        self.agent.notify_llm_function_completed(f"Passage à l'étape suivante", "navigation_pas_a_pas")
+                    elif data.get('previous_step'):
+                        if self.state_machine.previous_step():
+                            self.execute_current_step()
+                        self.agent.notify_llm_function_completed(f"Retour à l'étape précédente", "navigation_pas_a_pas")
+                    elif data.get('start_cooking'):
+                        if self.state_machine.current_state == CookingState.COOKING_GUIDANCE:
+                            self.state_machine.transition_to(CookingState.STEP_EXECUTION)
+                            cooking_steps = []
+                            recipe_data = self._event_data.get('recipe_confirmed', {})
+                            for step in recipe_data.get('details_techniques', []):
+                                cooking_steps.append(step.get('description'))
+                            self.state_machine.set_recipe_steps(cooking_steps)
+                            self.execute_current_step()
+                        self.agent.notify_llm_function_completed("Démarrage de la préparation", "navigation_pas_a_pas")
+                    elif data.get('stop_cooking'):
+                        self.state_machine.transition_to(CookingState.COOKING_GUIDANCE)
+                        self.agent.notify_llm_function_completed("Arrêt de la préparation", "navigation_pas_a_pas")
+                    elif data.get('repeat_step'):
+                        self.execute_current_step()
+                        self.agent.notify_llm_function_completed("Répétition de l'étape actuelle", "navigation_pas_a_pas")
             # Display text response - process_command will handle next input via on_user_entry
             if text_response:
                 self.ui.show_text(f"{text_response}\n")

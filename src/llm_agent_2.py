@@ -76,6 +76,14 @@ Consignes de génération :
 5. Tu n'est pas obligé de proposer des recettes avec tous les ingrédients fournis. Ce qui prime est la qualité des recettes et leur variété.
 
 Lorsque l'utilisateur te demande de lancer un minuteur, tu DOIS impérativement appeler la fonction lancer_minuteur.
+
+Navigation pas à pas :
+Quand tu es dans l'état COOKING_GUIDANCE ou STEP_EXECUTION, tu peux utiliser la fonction navigation_pas_a_pas pour guider l'utilisateur :
+- Si l'utilisateur dit "ok", "go", "commence", "démarre", "c'est parti" ou exprime qu'il veut commencer la préparation, appelle navigation_pas_a_pas avec l'action DEMARRER.
+- Si l'utilisateur dit "suivant", "next", "étape suivante", appelle navigation_pas_a_pas avec l'action SUIVANT.
+- Si l'utilisateur dit "précédent", "back", "étape précédente", appelle navigation_pas_a_pas avec l'action PRECEDENT.
+- Si l'utilisateur dit "répète", "repeat", "encore", appelle navigation_pas_a_pas avec l'action REPETER.
+- Si l'utilisateur dit "stop", "arrête", appelle navigation_pas_a_pas avec l'action STOP.
 """
 
 
@@ -125,52 +133,38 @@ def navigation_pas_a_pas(action: NavigationAction):
     """
     Fonction pour contrôler l'affichage des étapes.
     À appeler UNIQUEMENT si l'utilisateur confirme vouloir commencer ou continuer le guidage pas à pas de la recette.
+    Args:
+        action: L'action à effectuer en fonction de la voloté de l'utilisateur (START, SUIVANT, PRECEDENT, STOP)
+    Returns:
+        La réponse à l'action
     """
-    global session_cooking
-    steps = session_cooking["steps"]
-    
-    if not session_cooking["is_active"] or not steps:
-        return "Aucune recette n'est active. Demandez à l'utilisateur de choisir une recette d'abord."
-
-    # Logique de navigation
-    idx = session_cooking["current_index"]
-    
-    if action == NavigationAction.DEMARRER:
-        session_cooking["current_index"] = 0
-        step = steps[0]
-        return f"[MODE GUIDAGE ACTIVÉ] Étape 1/{len(steps)} : {step['description']}. (Conseil: {step['conseil']})"
-
-    elif action == NavigationAction.SUIVANT:
-        if idx < len(steps) - 1:
-            session_cooking["current_index"] += 1
-            step = steps[session_cooking["current_index"]]
-            return f"Étape {step['numero']}/{len(steps)} : {step['description']}. (Conseil: {step['conseil']})"
-        else:
-            session_cooking["is_active"] = False # Fin de la recette
-            return "C'est terminé ! La recette est finie. Souhaitez-vous autre chose ?"
-
-    elif action == NavigationAction.PRECEDENT:
-        if idx > 0:
-            session_cooking["current_index"] -= 1
-            step = steps[session_cooking["current_index"]]
-            return f"Retour à l'étape {step['numero']} : {step['description']}"
-        else:
-            return "On est au tout début."
-            
-    elif action == NavigationAction.REPETER:
-        if idx == -1: return "On n'a pas encore commencé."
-        step = steps[idx]
-        return f"Je répète : {step['description']}"
+    #Ici on gère la navigation pas à pas lorsque nous sommes dans l'état COOKING_GUIDANCE
+    #Si l'utilisateur confirme avoir terminé une étape, ou bien qu'il veut passer à l'étape suivante, on passe à l'étape suivante
+    if action == NavigationAction.SUIVANT:
+        return "next_step"
 # ============================================================================
 # CLASSE LLM AGENT
 # ============================================================================
 
 class LLMAgent:
-    def __init__(self):
-        # On met la fonction dans une liste d'outils
-        # Google Generative AI peut automatiquement convertir les fonctions Pydantic
-        # Passer directement la liste (comme dans test_gemini_functions.py)
-        tools_list = [propose_recipe_options, lancer_minuteur, valider_et_detaille_recette]
+    def __init__(self, state_machine=None):
+        # Stocker la référence au state_machine pour déterminer quels outils sont disponibles
+        self.state_machine = state_machine
+        
+        # Outils de base toujours disponibles
+        self.base_tools = [propose_recipe_options, lancer_minuteur, valider_et_detaille_recette]
+        
+        # Outils conditionnels (disponibles selon l'état)
+        self.conditional_tools = {
+            CookingState.COOKING_GUIDANCE: [navigation_pas_a_pas],
+            CookingState.STEP_EXECUTION: [navigation_pas_a_pas],
+        }
+        
+        # Construire la liste d'outils initiale
+        tools_list = self._get_tools_for_current_state()
+        
+        # Stocker la liste d'outils actuelle pour comparaison
+        self.current_tools = tools_list
         
         # On initialise le modèle avec les outils
         self.model = genai.GenerativeModel(
@@ -183,8 +177,64 @@ class LLMAgent:
         self.chat = None
         # On démarre le chat en mode automatique (le modèle gère l'appel)
         self.chat = self.model.start_chat(enable_automatic_function_calling=False)
+    
+    def _get_tools_for_current_state(self):
+        """
+        Construit la liste d'outils en fonction de l'état actuel.
+        Cette méthode lit self.state_machine.current_state à chaque appel,
+        donc elle reflète toujours l'état actuel, même si l'état a changé depuis l'init.
+        """
+        tools = list(self.base_tools)
+        
+        if self.state_machine:
+            # Lire l'état actuel (pas l'état à l'init)
+            current_state = self.state_machine.current_state
+            # Ajouter les outils conditionnels pour l'état actuel
+            if current_state in self.conditional_tools:
+                tools.extend(self.conditional_tools[current_state])
+        
+        return tools
+    
+    def _update_tools_if_needed(self):
+        """Met à jour le chat avec les outils appropriés si l'état a changé."""
+        if not self.state_machine:
+            return
+        
+        current_tools = self._get_tools_for_current_state()
+        # Vérifier si les outils ont changé en comparant les noms des fonctions
+        current_tool_names = {tool.__name__ for tool in current_tools}
+        previous_tool_names = {tool.__name__ for tool in self.current_tools}
+        
+        # Si les outils sont différents, recréer le modèle et le chat
+        if current_tool_names != previous_tool_names:
+            # Sauvegarder l'historique du chat pour le restaurer
+            chat_history = []
+            if self.chat and hasattr(self.chat, 'history'):
+                chat_history = list(self.chat.history)  # Copier l'historique
+            
+            # Recréer le modèle avec les nouveaux outils
+            self.model = genai.GenerativeModel(
+                'gemini-2.5-pro',
+                tools=current_tools,
+                system_instruction=instruction_chef
+            )
+            
+            # Mettre à jour la liste d'outils actuelle
+            self.current_tools = current_tools
+            
+            # Recréer le chat en préservant l'historique
+            self.chat = self.model.start_chat(
+                history=chat_history,
+                enable_automatic_function_calling=False
+            )
+            
+            print(f"[SYSTEME] 🔧 Outils mis à jour pour l'état {self.state_machine.current_state.value}: {[tool.__name__ for tool in current_tools]} (historique préservé: {len(chat_history)} messages)")
 
     def get_response(self, user_input: str):
+        # Mettre à jour les outils si l'état a changé depuis le dernier appel
+        # Cette vérification se fait à chaque interaction, donc les outils sont toujours à jour
+        self._update_tools_if_needed()
+        
         structured_data = None
         response_text = None
         response = self.chat.send_message(user_input)
@@ -208,12 +258,17 @@ class LLMAgent:
                         # Normaliser les ingrédients en dict {name, quantity, unit}
                         ingredients_norm = []
                         for ing in ingredients:
-                            ingredients_norm.append({
-                                "name": ing.get("name"),
-                                "quantity": ing.get("quantity"),
-                                "unit": ing.get("unit"),
-                                "available": ing.get("available")
-                            })
+                            try:
+                                ingredients_norm.append({
+                                    "name": ing.get("name"),
+                                    "quantity": ing.get("quantity"),
+                                    "unit": ing.get("unit"),
+                                    "available": ing.get("available"),
+                                })
+                            except Exception as e:
+                                print(f"[SYSTEME] 🔴 Erreur lors de la normalisation des ingrédients: {e}")
+                                continue
+                            
 
                  
 
@@ -262,6 +317,23 @@ class LLMAgent:
                                 "dependencies": detail.get("dependencies", [])
                             })
                     print(f"[SYSTEME] ✓ Recette validée avec {len(structured_data['details_techniques'])} étapes détaillées")
+                elif fn_name == 'navigation_pas_a_pas':
+                    action = fn_args.get("action")
+                    print(f"\n[SYSTEME] 🧭 NAVIGATION PAS À PAS : {action}")
+                    structured_data = {
+                        "navigation_action": action
+                    }
+                    # Déterminer l'action à effectuer
+                    if action == NavigationAction.SUIVANT:
+                        structured_data["next_step"] = True
+                    elif action == NavigationAction.PRECEDENT:
+                        structured_data["previous_step"] = True
+                    elif action == NavigationAction.DEMARRER:
+                        structured_data["start_cooking"] = True
+                    elif action == NavigationAction.STOP:
+                        structured_data["stop_cooking"] = True
+                    elif action == NavigationAction.REPETER:
+                        structured_data["repeat_step"] = True
             # Cas B : Le modèle répond du texte (Erreur ou blabla)
             elif part.text:
                 response_text = part.text

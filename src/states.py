@@ -62,6 +62,20 @@ class StateMachine:
 
         print("No more steps to move to")
         return False
+    
+    def previous_step(self):
+        """Go back to the previous recipe step, if any.
+        
+        Returns True if we successfully moved to the previous step,
+        False if we're already at the first step.
+        """
+        if self.current_step > 0:
+            print(f"Moving to previous step: {self.current_step}, total steps: {len(self.recipe_steps)}")
+            self.current_step -= 1
+            return True
+
+        print("Already at the first step")
+        return False
         
     def get_current_step(self) -> Optional[str]:
         """Return the current step description, or None if out of range."""
