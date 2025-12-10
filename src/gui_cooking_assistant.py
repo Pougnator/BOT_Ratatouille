@@ -712,23 +712,31 @@ class GUICookingAssistant(CookingUI):
         lines = ingredients_text.strip().split('\n')
         for line in lines:
             line = line.strip()
-            if line and (line.startswith('•') or line.startswith('-') or line.startswith('*')):
-                # Remove bullet point
+            if not line:
+                continue
+
+            color = "#00c853"  # green for available ingredients
+
+            if line.startswith("missing:"):
+                ingredient_text = line[len("missing:"):].strip().lstrip('•-* ').strip()
+                color = "#ff8c00"  # orange for missing ingredients
+            else:
                 ingredient_text = line.lstrip('•-* ').strip()
-                if ingredient_text:
-                    ingredient_item = tk.Label(
-                        self.ingredients_content,
-                        text=ingredient_text,
-                        font=("Open Sans", 11),  # Reduced from 13
-                        fg="#c5c5d2",
-                        bg=self.bg_color,
-                        anchor="w",
-                        padx=32,  # Space for bullet
-                        pady=2,  # Reduced from 5
-                        wraplength=250,  # Force text wrapping for long ingredients (320px sidebar - 70px padding)
-                        justify=tk.LEFT
-                    )
-                    ingredient_item.pack(fill="x", padx=20)
+
+            if ingredient_text:
+                ingredient_item = tk.Label(
+                    self.ingredients_content,
+                    text=ingredient_text,
+                    font=("Open Sans", 11),  # Reduced from 13
+                    fg=color,
+                    bg=self.bg_color,
+                    anchor="w",
+                    padx=32,  # Space for bullet
+                    pady=2,  # Reduced from 5
+                    wraplength=250,  # Force text wrapping for long ingredients (320px sidebar - 70px padding)
+                    justify=tk.LEFT
+                )
+                ingredient_item.pack(fill="x", padx=20)
                     # # Add bullet point manually
                     # bullet = tk.Label(
                     #     self.ingredients_content,
@@ -979,17 +987,20 @@ class GUICookingAssistant(CookingUI):
     
     def show_ingredients(self, ingredients: List[Dict[str, str]]):
         """Display ingredients list"""
-        ingredients_text = ""
+        ingredients_available_text = ""
+        ingredients_unavailable_text = ""
+
         for ingredient in ingredients:
             quantity = ingredient.get("quantity", "")
             unit = ingredient.get("unit", "")
             name = ingredient.get("name", "")
-            prep = ingredient.get("preparation", "")
-            
-            ingredients_text += f"• {quantity} {unit} {name}"
-            if prep:
-                ingredients_text += f" ({prep})"
-            ingredients_text += "\n"
+            if ingredient.get("available"):
+                ingredients_available_text += f"• {quantity} {unit} {name}\n"
+            else:
+                # Prefix with a marker so we can colorize missing items later
+                ingredients_unavailable_text += f"missing: • {quantity} {unit} {name}\n"
+
+        ingredients_text = ingredients_available_text + ingredients_unavailable_text
         
         # Update the ingredients panel
         print(("Showing the ingredients in the ingredients sidebar"))

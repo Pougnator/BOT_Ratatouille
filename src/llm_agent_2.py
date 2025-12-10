@@ -18,14 +18,18 @@ genai.configure(api_key=api_key)
 # ============================================================================
 # MODÈLES PYDANTIC - Définis en premier
 # ============================================================================
-
+class Ingredient(BaseModel):
+    name: str = Field(description="Nom de l'ingrédient")
+    quantity: int = Field(description="Quantité de l'ingrédient")
+    unit: str = Field(description="Unité de mesure de l'ingrédient")
+    available: bool = Field(description="True si l'ingrédient est disponible, False sinon")
 class RecetteResume(BaseModel):
     id: str = Field(description="L'identifiant unique de la recette")
     titre: str = Field(description="Le titre de la recette")
     description_courte: str = Field(description="Une brève description de la recette")
-    ingredients_complets: List[str] = Field(description="La liste des ingrédients complets de la recette")
-    ingredients_manquants: List[str] = Field(description="La liste des ingrédients manquants de la recette")
+    ingredients: List[Ingredient] = Field(description="La liste des ingrédients de la recette")
     temps_prepa_minutes: int = Field(description="Le temps de préparation de la recette en minutes")
+
 
 class EtapePreparation(BaseModel):
     numero: int = Field(description="Numéro de l'étape")
@@ -123,7 +127,7 @@ class LLMAgent:
         
         # On initialise le modèle avec les outils
         self.model = genai.GenerativeModel(
-            'gemini-2.5-flash',
+            'gemini-2.5-pro',
             tools=tools_list,
             system_instruction=instruction_chef
         )
@@ -153,12 +157,25 @@ class LLMAgent:
                     # On boucle sur la liste des recettes proposées par l'IA
                     # (fn_args est un objet spécial Map de Google, on le transforme en dict)
                     for recette in fn_args.get("options"):
+                        ingredients = recette.get("ingredients") or []
+                        # Normaliser les ingrédients en dict {name, quantity, unit}
+                        ingredients_norm = []
+                        for ing in ingredients:
+                            ingredients_norm.append({
+                                "name": ing.get("name"),
+                                "quantity": ing.get("quantity"),
+                                "unit": ing.get("unit"),
+                                "available": ing.get("available")
+                            })
+
+                 
+
                         structured_data["recettes"].append({
                             "id": recette.get("id"),
                             "titre": recette.get("titre"),
-                            "ingredients": recette.get("ingredients_complets"),
-                            "ingredients_manquants": recette.get("ingredients_manquants"),
+                            "ingredients": ingredients_norm,
                             "temps_prepa_minutes": recette.get("temps_prepa_minutes"),
+
                             # "difficulte": recette.get("difficulte"),
                             # "calories_par_pers": recette.get("calories_par_pers")
                         })
