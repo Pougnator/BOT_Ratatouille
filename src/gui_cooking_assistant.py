@@ -299,6 +299,28 @@ class GUICookingAssistant(CookingUI):
         # Initial keyboard layout (will be rebuilt dynamically when shown)
         self._setup_numeric_keyboard()
 
+        # Timer countdown display (bottom right, below numeric keyboard)
+        self.timer_panel = tk.Frame(
+            self.ingredients_sidebar,
+            bg=self.bg_color,
+            highlightbackground=self.border_color,
+            highlightthickness=1,
+            height=80
+        )
+        self.timer_panel.pack_propagate(False)
+        # Don't pack initially - will show when timer is active
+        
+        # Timer display container (scrollable for multiple timers)
+        self.timer_container = tk.Frame(self.timer_panel, bg=self.bg_color)
+        self.timer_container.pack(fill="both", expand=True, padx=20, pady=12)
+        
+        # Dictionary to store timer display widgets: {timer_id: {'countdown': Label, 'name': Label, 'frame': Frame}}
+        self.timer_widgets = {}
+        
+        # Track if timer update is scheduled
+        self.timer_update_job = None
+        self.timer_visible = False
+
         # "Next" button for step execution (bottom of ingredients sidebar, hidden by default)
         # Placed in the same column as ingredients & numeric keyboard for visual consistency.
         self.next_button_container = tk.Frame(
@@ -452,6 +474,139 @@ class GUICookingAssistant(CookingUI):
         if self.numeric_keyboard_visible:
             self.numeric_panel.pack_forget()
             self.numeric_keyboard_visible = False
+    
+    def show_timer_countdown(self):
+        """Show the timer countdown panel"""
+        if not self.timer_visible:
+            # Pack at the bottom, after numeric keyboard if visible
+            self.timer_panel.pack(side=tk.BOTTOM, fill="x", padx=0, pady=0)
+            self.timer_visible = True
+            # Start updating the countdown
+            self._update_timer_countdown()
+    
+    def hide_timer_countdown(self):
+        """Hide the timer countdown panel"""
+        if self.timer_visible:
+            self.timer_panel.pack_forget()
+            self.timer_visible = False
+            # Cancel any pending update
+            if self.timer_update_job:
+                self.root.after_cancel(self.timer_update_job)
+                self.timer_update_job = None
+            # Clear all timer widgets
+            for timer_id in list(self.timer_widgets.keys()):
+                if timer_id in self.timer_widgets:
+                    widgets = self.timer_widgets[timer_id]
+                    widgets['frame'].destroy()
+                    del self.timer_widgets[timer_id]
+    
+    def _update_timer_countdown(self):
+        """Update the timer countdown display (thread-safe, called from main thread)"""
+        # Get the cooking assistant instance to access the timer
+        if hasattr(self, 'cooking_assistant') and self.cooking_assistant:
+            active_timers = self.cooking_assistant.timer.get_active_timers()
+            
+            if active_timers:
+                # Get all active timers with their start times for sorting
+                timers_with_start = []
+                for timer_id, timer_info in active_timers.items():
+                    # Get the original timer to access 'started' time
+                    if timer_id in self.cooking_assistant.timer.active_timers:
+                        started = self.cooking_assistant.timer.active_timers[timer_id]['started']
+                        timers_with_start.append((timer_id, timer_info, started))
+                
+                # Sort by start time: oldest first (will be displayed on top)
+                timers_with_start.sort(key=lambda x: x[2])
+                
+                # Remove widgets for timers that are no longer active
+                active_timer_ids = {timer_id for timer_id, _, _ in timers_with_start}
+                for timer_id in list(self.timer_widgets.keys()):
+                    if timer_id not in active_timer_ids:
+                        # Remove the timer widget
+                        if timer_id in self.timer_widgets:
+                            widgets = self.timer_widgets[timer_id]
+                            widgets['frame'].destroy()
+                            del self.timer_widgets[timer_id]
+                
+                # Update or create widgets for each active timer
+                for idx, (timer_id, timer_info, started) in enumerate(timers_with_start):
+                    remaining = int(timer_info['remaining'])
+                    name = timer_info['name']
+                    
+                    # Format the time
+                    hours = remaining // 3600
+                    minutes = (remaining % 3600) // 60
+                    seconds = remaining % 60
+                    
+                    if hours > 0:
+                        time_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+                    else:
+                        time_str = f"{minutes:02d}:{seconds:02d}"
+                    
+                    # Determine color based on remaining time
+                    if remaining <= 60:
+                        countdown_color = "#ff6b6b"  # Red for urgency
+                    elif remaining <= 300:  # Less than 5 minutes
+                        countdown_color = "#ffa500"  # Orange
+                    else:
+                        countdown_color = self.text_color
+                    
+                    # Create or update widget for this timer
+                    if timer_id not in self.timer_widgets:
+                        # Create new widget frame for this timer
+                        timer_frame = tk.Frame(self.timer_container, bg=self.bg_color)
+                        timer_frame.pack(fill="x", pady=(0 if idx == 0 else 8, 0), anchor="w")
+                        
+                        # Timer countdown text
+                        countdown_label = tk.Label(
+                            timer_frame,
+                            text=time_str,
+                            font=("Open Sans", 18, "bold"),
+                            fg=countdown_color,
+                            bg=self.bg_color
+                        )
+                        countdown_label.pack(anchor="w")
+                        
+                        # Timer name
+                        name_label = tk.Label(
+                            timer_frame,
+                            text=name,
+                            font=("Open Sans", 11, "normal"),
+                            fg=self.secondary_color,
+                            bg=self.bg_color
+                        )
+                        name_label.pack(anchor="w", pady=(2, 0))
+                        
+                        self.timer_widgets[timer_id] = {
+                            'frame': timer_frame,
+                            'countdown': countdown_label,
+                            'name': name_label
+                        }
+                    else:
+                        # Update existing widget
+                        widgets = self.timer_widgets[timer_id]
+                        widgets['countdown'].config(text=time_str, fg=countdown_color)
+                        widgets['name'].config(text=name)
+                    
+                    # Reorder widgets to match sorted order (oldest on top, newest on bottom)
+                    widgets = self.timer_widgets[timer_id]
+                    widgets['frame'].pack_forget()
+                    widgets['frame'].pack(fill="x", pady=(0 if idx == 0 else 8, 0), anchor="w")
+                
+                # Adjust panel height based on number of timers
+                num_timers = len(timers_with_start)
+                base_height = 80
+                height_per_timer = 60
+                self.timer_panel.config(height=min(base_height + (num_timers - 1) * height_per_timer, 300))
+                
+                # Schedule next update in 1 second (1000ms)
+                self.timer_update_job = self.root.after(1000, self._update_timer_countdown)
+            else:
+                # No active timers, hide the panel
+                self.hide_timer_countdown()
+        else:
+            # No cooking assistant, hide the panel
+            self.hide_timer_countdown()
     
     def _on_chat_configure(self, event):
         """Update scroll region when chat content changes"""

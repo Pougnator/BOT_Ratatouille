@@ -136,18 +136,7 @@ class CookingTimer:
                     except Exception as e:
                         print(f"Error in timer callback: {e}")
             
-            # Display countdown updates at regular intervals
-            time_since_update = (current_time - last_update_time).total_seconds()
-            if time_since_update >= countdown_interval:
-                active_timers_count = len(self.get_active_timers())
-                
-                if active_timers_count > 0:
-                    self.console.print("\n[bold cyan]⏳ TIMER UPDATE:[/bold cyan]")
-                    for timer_id, timer_info in self.get_active_timers().items():
-                        time_str = self.format_time(timer_info['remaining'])
-                        self.console.print(f"  [bold blue]⏳ {timer_info['name']}: [bold yellow]{time_str}[/bold yellow] remaining[/bold blue]")
-                    
-                last_update_time = current_time
+            # Timer updates are now handled by the GUI, no need to print here
             
             # Sleep for a short time to prevent high CPU usage
             time.sleep(0.5)  # Check timers twice per second

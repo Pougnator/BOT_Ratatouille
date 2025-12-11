@@ -387,6 +387,9 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
                             'timer_name': timer_name
                         }
                         self._events['timer_started'].set()
+                        # Afficher le décompte du minuteur dans l'UI
+                        if hasattr(self.ui, 'show_timer_countdown'):
+                            self.ui.show_timer_countdown()
                         self.agent.notify_llm_function_completed("Le minuteur a été lancé", "lancer_minuteur")
                 if 'recipe_confirmed' in data and data.get('recipe_confirmed'):
                     #sauvegarder l'id de la recette dans la machine à états
