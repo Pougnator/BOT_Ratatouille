@@ -6,8 +6,7 @@ class CookingState(Enum):
     STARTING = "starting"
     INGREDIENT_COLLECTION = "ingredient_collection"
     RECIPE_PROPOSAL = "recipe_proposal"
-    RECIPE_CONFIRMATION = "recipe_confirmation"
-    COOKING_GUIDANCE = "cooking_guidance"
+    RECIPE_PREVIEW = "recipe_preview"
     STEP_EXECUTION = "step_execution"
     COMPLETED = "completed"
 
@@ -27,6 +26,7 @@ class StateMachine:
     def transition_to(self, new_state: CookingState):
         old_state = self.current_state
         self.current_state = new_state
+      
         print(f"\n[SYSTEME] 🔄 CHANGEMENT D'ÉTAT : {old_state.value} → {new_state.value}")
         
     def set_servings(self, servings: int):

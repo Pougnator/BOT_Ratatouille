@@ -51,8 +51,7 @@ class NavigationAction(str, Enum):
     DEMARRER = "DEMARRER"
     SUIVANT = "SUIVANT"
     PRECEDENT = "PRECEDENT"
-    REPETER = "REPETER"
-    STOP = "STOP"
+
 
 
 # ============================================================================
@@ -62,6 +61,16 @@ class NavigationAction(str, Enum):
 instruction_chef = """
 Rôle : Tu es un Assistant Chef Cuisinier expert et créatif. Tu aimes des recettes de cuisines du monde entier, variées et délicieuses.
 Objectif : Tu aides l'utilisateur à cuisiner avec ce qu'il a dans son frigo.
+
+#Déroulement#:
+La conversation va se dérouler en plusieurs états :
+    "starting"
+    "ingredient_collection"
+    "recipe_proposal"
+    "recipe_preview"
+    "step_execution"
+    "completed"
+Tu sera averti de chaque changement d'état
 
 Règle d'OR :
 Lorsque l'utilisateur te donne une liste d'ingrédients et un nombre de personnes, tu ne dois PAS écrire de recettes en texte.
@@ -78,12 +87,14 @@ Consignes de génération :
 Lorsque l'utilisateur te demande de lancer un minuteur, tu DOIS impérativement appeler la fonction lancer_minuteur.
 
 Navigation pas à pas :
-Quand tu es dans l'état COOKING_GUIDANCE ou STEP_EXECUTION, tu peux utiliser la fonction navigation_pas_a_pas pour guider l'utilisateur :
-- Si l'utilisateur dit "ok", "go", "commence", "démarre", "c'est parti" ou exprime qu'il veut commencer la préparation, appelle navigation_pas_a_pas avec l'action DEMARRER.
+Attention, pas besoin de génerer de texte supplémentaire dans la réponse.
+Règle d'OR : tu ne lancera PAS de fonction navigation pas_à_pas si tu n'est pas dans l'état RECIPE_PREVIEW ou STEP_EXECUTION.
+Surtout, tu ne lanceras PAS de fonction navigation pas_à_pas si tu es dans l'état STARTING ou RECIPE_PROPOSAL.
+ Ce n'est que dans ces deux états que tu peux utiliser la fonction navigation_pas_a_pas pour guider l'utilisateur :
+- Si l'utilisateur dit ou confirme qu'il veut commencer la préparation, appelle navigation_pas_a_pas avec l'action DEMARRER.
 - Si l'utilisateur dit "suivant", "next", "étape suivante", appelle navigation_pas_a_pas avec l'action SUIVANT.
 - Si l'utilisateur dit "précédent", "back", "étape précédente", appelle navigation_pas_a_pas avec l'action PRECEDENT.
-- Si l'utilisateur dit "répète", "repeat", "encore", appelle navigation_pas_a_pas avec l'action REPETER.
-- Si l'utilisateur dit "stop", "arrête", appelle navigation_pas_a_pas avec l'action STOP.
+
 """
 
 
@@ -120,7 +131,7 @@ def lancer_minuteur(duree_secondes: int, label: str):
 def valider_et_detaille_recette(id_recette: str, recette_detaillee: RecetteSteps):
     """
     Valide le choix de l'utilisateur et génère les étapes détaillées, ainsi qu'une phrase d'introduction de la recette et un conseil gourmand final.
-    Change l'état vers 'cooking_guidance'.
+    Change l'état vers 'cooking_guidance'. Ne doit être appelée que dans l'état RECIPE_PROPOSAL.
     
     Note: Cette fonction ne devrait pas modifier l'état directement.
     Le changement d'état devrait être géré dans cooking_assistant_2.py.
@@ -131,14 +142,14 @@ def valider_et_detaille_recette(id_recette: str, recette_detaillee: RecetteSteps
 
 def navigation_pas_a_pas(action: NavigationAction):
     """
-    Fonction pour contrôler l'affichage des étapes.
+    Fonction pour contrôler l'affichage des étapes. Pas besoin d'ajouter du texte supplémentaire dans la réponse.
     À appeler UNIQUEMENT si l'utilisateur confirme vouloir commencer ou continuer le guidage pas à pas de la recette.
     Args:
         action: L'action à effectuer en fonction de la voloté de l'utilisateur (START, SUIVANT, PRECEDENT, STOP)
     Returns:
         La réponse à l'action
     """
-    #Ici on gère la navigation pas à pas lorsque nous sommes dans l'état COOKING_GUIDANCE
+    #Ici on gère la navigation pas à pas lorsque nous sommes dans l'état RECIPE_PREVIEW
     #Si l'utilisateur confirme avoir terminé une étape, ou bien qu'il veut passer à l'étape suivante, on passe à l'étape suivante
     if action == NavigationAction.SUIVANT:
         return "next_step"
@@ -152,30 +163,23 @@ class LLMAgent:
         self.state_machine = state_machine
         
         # Outils de base toujours disponibles
-        self.base_tools = [propose_recipe_options, lancer_minuteur, valider_et_detaille_recette]
+        self.base_tools = [propose_recipe_options, lancer_minuteur, valider_et_detaille_recette, navigation_pas_a_pas]
         
-        # Outils conditionnels (disponibles selon l'état)
-        self.conditional_tools = {
-            CookingState.COOKING_GUIDANCE: [navigation_pas_a_pas],
-            CookingState.STEP_EXECUTION: [navigation_pas_a_pas],
-        }
+        # # Construire la liste d'outils initiale
+        # tools_list = self._get_tools_for_current_state()
         
-        # Construire la liste d'outils initiale
-        tools_list = self._get_tools_for_current_state()
-        
-        # Stocker la liste d'outils actuelle pour comparaison
-        self.current_tools = tools_list
+        # # Stocker la liste d'outils actuelle pour comparaison
+        # self.current_tools = tools_list
         
         # On initialise le modèle avec les outils
         self.model = genai.GenerativeModel(
             'gemini-2.5-pro',
-            tools=tools_list,
+            tools=self.base_tools,
             system_instruction=instruction_chef
         )
         
         # Initialiser le chat
         self.chat = None
-        # On démarre le chat en mode automatique (le modèle gère l'appel)
         self.chat = self.model.start_chat(enable_automatic_function_calling=False)
     
     def _get_tools_for_current_state(self):
@@ -233,7 +237,7 @@ class LLMAgent:
     def get_response(self, user_input: str):
         # Mettre à jour les outils si l'état a changé depuis le dernier appel
         # Cette vérification se fait à chaque interaction, donc les outils sont toujours à jour
-        self._update_tools_if_needed()
+        # self._update_tools_if_needed()
         
         structured_data = None
         response_text = None
@@ -330,10 +334,7 @@ class LLMAgent:
                         structured_data["previous_step"] = True
                     elif action == NavigationAction.DEMARRER:
                         structured_data["start_cooking"] = True
-                    elif action == NavigationAction.STOP:
-                        structured_data["stop_cooking"] = True
-                    elif action == NavigationAction.REPETER:
-                        structured_data["repeat_step"] = True
+            
             # Cas B : Le modèle répond du texte (Erreur ou blabla)
             elif part.text:
                 response_text = part.text

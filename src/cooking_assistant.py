@@ -502,9 +502,9 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
                     
                 elif self.state_machine.current_state == CookingState.RECIPE_CONFIRMATION:
                     if await self.confirm_recipe():
-                        self.state_machine.transition_to(CookingState.COOKING_GUIDANCE)
+                        self.state_machine.transition_to(CookingState.RECIPE_PREVIEW)
                     
-                elif self.state_machine.current_state == CookingState.COOKING_GUIDANCE:
+                elif self.state_machine.current_state == CookingState.RECIPE_PREVIEW:
                     # Steps are already affichées, préparer l'UI pour l'exécution
                     if hasattr(self.ui, "show_next_button"):
                         self.ui.show_next_button()

@@ -228,6 +228,11 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
         self.ui.show_text(f"{current_step['description']}\n")
         self.ui.show_text(f"{current_step['conseil']}\n")
 
+        self.agent.notify_llm_without_response(f"[Systeme][INFO CONTEXTE - NE PAS REPONDRE]" + 
+        f"On vient d'afficher le texte {current_step['description'] + current_step['conseil']} " +
+        f"dans le cadre de l'étape {step_num} de la recette selectionnée" +
+        f"On attends la confirmation de l'utilisateur pour passer à l'étape suivante.")
+
         if current_step.get('timer_necessaire'):
             step_time = current_step.get('duree_estimee_minutes')
             self.ui.show_text(f"Voulez-vous lancer un timer de {step_time} pour cette étape? \n")
@@ -373,11 +378,10 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
                     self._events['ingredients_available'].set()
                     # Display recipes using dedicated method
                     self._display_recipes(data)
-                    
-                    # Transition vers RECIPE_PROPOSAL si on est en STARTING (le log sera fait par transition_to)
-                    if self.state_machine.current_state == CookingState.STARTING:
-                        self.state_machine.transition_to(CookingState.RECIPE_PROPOSAL)
-                    self.agent.notify_llm_function_completed("Les recettes ont été affichées à l'utilisateur. Il est en train de réfléchir", "propose_recipe_options")
+                 
+                    self.state_machine.transition_to(CookingState.RECIPE_PROPOSAL)
+                    self.agent.notify_llm_without_response(f"[Systeme][INFO CONTEXTE - NE PAS REPONDRE] On passe à l'état {self.state_machine.current_state.value}")
+                    self.agent.notify_llm_function_completed("Les recettes ont été affichées à l'utilisateur. Il est en train de réfléchir et va choisir une recette.", "propose_recipe_options")
                 if 'timer_started' in data and data.get('timer_started'):
                     # Lancer le minuteur avec les données reçues
                     duree_secondes = data.get('duree_secondes')
@@ -454,8 +458,9 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
                     # Display the recipe steps nicely in the UI
                     self._display_recipe_steps(decoded_recipe)
                     self.ui.show_ingredients(self.ingredients_data['ingredients'])
-                    # Transition vers COOKING_GUIDANCE (le log sera fait par transition_to)
-                    self.state_machine.transition_to(CookingState.COOKING_GUIDANCE)
+                    # Transition vers RECIPE_PREVIEW (le log sera fait par transition_to)
+                    self.state_machine.transition_to(CookingState.RECIPE_PREVIEW)
+                    self.agent.notify_llm_without_response(f"[Systeme][INFO CONTEXTE - NE PAS REPONDRE] On passe à l'état {self.state_machine.current_state.value}")
                     self.agent.notify_llm_function_completed("La recette a été confirmée et les étapes détaillées ont été générées", "valider_et_detaille_recette")
                 # Gérer la navigation pas à pas
                 if 'navigation_action' in data:
@@ -463,23 +468,30 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
                     if data.get('next_step'):
                         if self.state_machine.next_step():
                            self.execute_current_step()
+                       
                         self.agent.notify_llm_function_completed(f"Passage à l'étape suivante", "navigation_pas_a_pas")
                     elif data.get('previous_step'):
                         if self.state_machine.previous_step():
                             self.execute_current_step()
                         self.agent.notify_llm_function_completed(f"Retour à l'étape précédente", "navigation_pas_a_pas")
                     elif data.get('start_cooking'):
-                        if self.state_machine.current_state == CookingState.COOKING_GUIDANCE:
+                        if self.state_machine.current_state == CookingState.RECIPE_PREVIEW:
                             self.state_machine.transition_to(CookingState.STEP_EXECUTION)
+                            self.agent.notify_llm_without_response(f"[Systeme][INFO CONTEXTE - NE PAS REPONDRE] On passe à l'état {self.state_machine.current_state.value}")
                             cooking_steps = []
                             recipe_data = self._event_data.get('recipe_confirmed', {})
                             for step in recipe_data.get('details_techniques', []):
                                 cooking_steps.append(step)
                             self.state_machine.set_recipe_steps(cooking_steps)
                             self.execute_current_step()
+                        else: 
+                            data, text_response = self.agent.get_response("Nous ne sommes pas dans l'état RECIPE_PREVIEW. On ne peut pas démarrer la préparation.")
+                            if text_response:
+                                self.ui.show_text(f"{text_response}\n")
                         self.agent.notify_llm_function_completed("Démarrage de la préparation", "navigation_pas_a_pas")
                     elif data.get('stop_cooking'):
-                        self.state_machine.transition_to(CookingState.COOKING_GUIDANCE)
+                        self.state_machine.transition_to(CookingState.RECIPE_PREVIEW)
+                        self.agent.notify_llm_without_response(f"[Systeme][INFO CONTEXTE - NE PAS REPONDRE] On passe à l'état {self.state_machine.current_state.value}")
                         self.agent.notify_llm_function_completed("Arrêt de la préparation", "navigation_pas_a_pas")
                     elif data.get('repeat_step'):
                         self.execute_current_step()

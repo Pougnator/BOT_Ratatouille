@@ -67,10 +67,10 @@ def valider_et_detaille_recette(id_recette: str, recette_detaillee: RecetteSteps
     current_state = state_machine.current_state
     
     # GARDE-FOU : On ne peut pas valider si on n'a pas d'abord cherché
-    if current_state == CookingState.COOKING_GUIDANCE:
+    if current_state == CookingState.RECIPE_PREVIEW:
         return {"erreur": "Une recette est déjà en cours ! Demande à l'utilisateur s'il veut l'annuler d'abord."}
         
-    state_machine.current_state = CookingState.COOKING_GUIDANCE
+    state_machine.current_state = CookingState.RECIPE_PREVIEW
     print(f"\n[SYSTEME] Verrouillage de la recette {id_recette}. Passage en mode CUISSON.")
     
     return { "Recette validée et étapes de récette générées et affichés au client"
