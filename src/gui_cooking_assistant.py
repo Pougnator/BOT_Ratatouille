@@ -312,7 +312,8 @@ class GUICookingAssistant(CookingUI):
         
         # Timer display container (scrollable for multiple timers)
         self.timer_container = tk.Frame(self.timer_panel, bg=self.bg_color)
-        self.timer_container.pack(fill="both", expand=True, padx=20, pady=12)
+        # Réduire légèrement les marges pour éviter que le texte soit coupé
+        self.timer_container.pack(fill="both", expand=True, padx=16, pady=10)
         
         # Dictionary to store timer display widgets: {timer_id: {'countdown': Label, 'name': Label, 'frame': Frame}}
         self.timer_widgets = {}
@@ -561,21 +562,23 @@ class GUICookingAssistant(CookingUI):
                         countdown_label = tk.Label(
                             timer_frame,
                             text=time_str,
-                            font=("Open Sans", 18, "bold"),
+                            # Police légèrement réduite pour éviter les coupures
+                            font=("Open Sans", 16, "bold"),
                             fg=countdown_color,
                             bg=self.bg_color
                         )
-                        countdown_label.pack(anchor="w")
+                        countdown_label.pack(anchor="w", pady=(0, 1))
                         
                         # Timer name
                         name_label = tk.Label(
                             timer_frame,
                             text=name,
-                            font=("Open Sans", 11, "normal"),
+                            # Police légèrement réduite pour éviter les coupures
+                            font=("Open Sans", 10, "normal"),
                             fg=self.secondary_color,
                             bg=self.bg_color
                         )
-                        name_label.pack(anchor="w", pady=(2, 0))
+                        name_label.pack(anchor="w", pady=(1, 0))
                         
                         self.timer_widgets[timer_id] = {
                             'frame': timer_frame,

@@ -229,9 +229,14 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
         self.ui.show_text(f"{current_step['conseil']}\n")
 
         if current_step.get('timer_necessaire'):
-            data, text_response = self.agent.get_response("Proposes à l'utilisateur de lancer un minuteur pour cette étape. Attention ne lui demandes pas si il veut continuer la recette pour ne pas créer d'ambiguité")
-            self.ui.show_text(f"{text_response}")
-            if data: print(f"Data: {data}")
+            step_time = current_step.get('duree_estimee_minutes')
+            self.ui.show_text(f"Voulez-vous lancer un timer de {step_time} pour cette étape? \n")
+            self.agent.notify_llm_without_response(
+                f"[Système][INFO CONTEXTE - NE PAS REPONDRE] "
+                f"L'utilisateur a reçu la question : 'Voulez-vous lancer un timer de {step_time} pour cette étape ?' "
+                f"Ne réponds pas, attends sa prochaine entrée. Si l'utilisateur veut un timer tu le lancera. Sinon, tu attends les prochains instructions."
+            )
+           
         
         # If on Raspberry Pi, display button controls guide
         if self.hardware.is_raspi:

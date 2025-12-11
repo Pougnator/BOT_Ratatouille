@@ -136,7 +136,7 @@ class CookingTimer:
                     except Exception as e:
                         print(f"Error in timer callback: {e}")
             
-            # Timer updates are now handled by the GUI, no need to print here
+          
             
             # Sleep for a short time to prevent high CPU usage
             time.sleep(0.5)  # Check timers twice per second

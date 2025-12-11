@@ -341,6 +341,16 @@ class LLMAgent:
         # Retourner toujours un tuple, même si on n'a que des function_call sans texte
         return structured_data, response_text
 
+    def notify_llm_without_response(self, notification_message: str):
+        """
+        Notifie le LLM qu'une notification a été envoyée sans attendre de réponse. Ne réponds pas.
+        Args:
+            notification_message: Message à envoyer au LLM
+        """
+        self.chat.send_message(notification_message)
+
+
+
     def notify_llm_function_completed(self, output_message: str, function_name: str):
         """
         Notifie le LLM qu'une fonction a été exécutée avec succès.
