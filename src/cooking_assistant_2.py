@@ -225,7 +225,13 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
         total_steps = len(self.state_machine.recipe_steps)
         
         self.ui.show_text(f"\nÉtape {step_num}/{total_steps}:\n")
-        self.ui.show_text(f"{current_step}\n")
+        self.ui.show_text(f"{current_step['description']}\n")
+        self.ui.show_text(f"{current_step['conseil']}\n")
+
+        if current_step.get('timer_necessaire'):
+            data, text_response = self.agent.get_response("Proposes à l'utilisateur de lancer un minuteur pour cette étape. Attention ne lui demandes pas si il veut continuer la recette pour ne pas créer d'ambiguité")
+            self.ui.show_text(f"{text_response}")
+            if data: print(f"Data: {data}")
         
         # If on Raspberry Pi, display button controls guide
         if self.hardware.is_raspi:
@@ -273,39 +279,39 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
         self.hardware.start_polling()
         print("✓ Button controls initialized\n")
     
-    def _button_next(self):
-        """Handler for the 'Next' button (GPIO 6)"""
-        print("Button pressed: Next\n")
-        # Simulate 'next' command when in step execution
-        if self.state_machine.current_state == CookingState.STEP_EXECUTION:
-            print("Moving to next step...\n")
-            # Signal the event to interrupt input
-            self._next_button_event.set()
+    # def _button_next(self):
+    #     """Handler for the 'Next' button (GPIO 6)"""
+    #     print("Button pressed: Next\n")
+    #     # Simulate 'next' command when in step execution
+    #     if self.state_machine.current_state == CookingState.STEP_EXECUTION:
+    #         print("Moving to next step...\n")
+    #         # Signal the event to interrupt input
+    #         self._next_button_event.set()
     
-    def _button_help(self):
-        """Handler for the 'Help' button (GPIO 19)"""
-        self.ui.show_text("❓ Bouton d'aide pressé. Posez votre question.\n")
+    # def _button_help(self):
+    #     """Handler for the 'Help' button (GPIO 19)"""
+    #     self.ui.show_text("❓ Bouton d'aide pressé. Posez votre question.\n")
         
        
-        import threading
+    #     import threading
 
        
     
-    def _button_back(self):
-        """Handler for the 'Back/Cancel' button (GPIO 0)"""
-        self.ui.show_text("⏮️ Button pressed: Back/Cancel\n")
-        # Different behavior depending on state
-        if self.state_machine.current_state == CookingState.RECIPE_CONFIRMATION:
-            # Go back to recipe proposal
-            self.ui.show_text("Retour à la proposition de recettes...\n")
-            self.state_machine.transition_to(CookingState.RECIPE_PROPOSAL)
-        elif self.state_machine.current_state == CookingState.STEP_EXECUTION:
-            # Cancel current timer if any
-            active_timers = self.timer.get_active_timers()
-            if active_timers:
-                timer_id = list(active_timers.keys())[0]  # Cancel first timer
-                self.timer.stop_timer(timer_id)
-                self.ui.show_text(f"Timer '{active_timers[timer_id]['name']}' annulé\n")
+    # def _button_back(self):
+    #     """Handler for the 'Back/Cancel' button (GPIO 0)"""
+    #     self.ui.show_text("⏮️ Button pressed: Back/Cancel\n")
+    #     # Different behavior depending on state
+    #     if self.state_machine.current_state == CookingState.RECIPE_CONFIRMATION:
+    #         # Go back to recipe proposal
+    #         self.ui.show_text("Retour à la proposition de recettes...\n")
+    #         self.state_machine.transition_to(CookingState.RECIPE_PROPOSAL)
+    #     elif self.state_machine.current_state == CookingState.STEP_EXECUTION:
+    #         # Cancel current timer if any
+    #         active_timers = self.timer.get_active_timers()
+    #         if active_timers:
+    #             timer_id = list(active_timers.keys())[0]  # Cancel first timer
+    #             self.timer.stop_timer(timer_id)
+    #             self.ui.show_text(f"Timer '{active_timers[timer_id]['name']}' annulé\n")
 
  
     async def run(self):
@@ -330,6 +336,7 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
             self.ui.show_text(f"{text_response}\n")
         
         # Main chat loop - standard pattern
+        ###########################################################################################################
         while True:
             # Check if we should stop
             if self._should_stop.is_set():
@@ -361,7 +368,7 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
                     self._events['ingredients_available'].set()
                     # Display recipes using dedicated method
                     self._display_recipes(data)
-                    # Ne pas stocker les ingrédients ici - on les stockera seulement pour la recette sélectionnée
+                    
                     # Transition vers RECIPE_PROPOSAL si on est en STARTING (le log sera fait par transition_to)
                     if self.state_machine.current_state == CookingState.STARTING:
                         self.state_machine.transition_to(CookingState.RECIPE_PROPOSAL)
@@ -447,8 +454,7 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
                     action = data.get('navigation_action')
                     if data.get('next_step'):
                         if self.state_machine.next_step():
-                            
-                            self.execute_current_step()
+                           self.execute_current_step()
                         self.agent.notify_llm_function_completed(f"Passage à l'étape suivante", "navigation_pas_a_pas")
                     elif data.get('previous_step'):
                         if self.state_machine.previous_step():
@@ -460,7 +466,7 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
                             cooking_steps = []
                             recipe_data = self._event_data.get('recipe_confirmed', {})
                             for step in recipe_data.get('details_techniques', []):
-                                cooking_steps.append(step.get('description'))
+                                cooking_steps.append(step)
                             self.state_machine.set_recipe_steps(cooking_steps)
                             self.execute_current_step()
                         self.agent.notify_llm_function_completed("Démarrage de la préparation", "navigation_pas_a_pas")
