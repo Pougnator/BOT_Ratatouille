@@ -981,7 +981,7 @@ class GUICookingAssistant(CookingUI):
     
     # ========== CookingUI Interface Implementation ==========
     
-    def _add_chat_message(self, text: str, is_user: bool = False, return_row: bool = False):
+    def _add_chat_message(self, text: str, is_user: bool = False, return_row: bool = False, font=None):
         """Add a message to the chat (assistant or user style)"""
         # Message row container - padding depends on message type
         message_row = tk.Frame(
@@ -1050,10 +1050,12 @@ class GUICookingAssistant(CookingUI):
             
         else:
             # Assistant message: plain text
+            # Use custom font if provided, otherwise default
+            message_font = font if font else ("Open Sans", 12)
             message_text = tk.Label(
                 message_content,
                 text=text,
-                font=("Open Sans", 12),  # Reduced from 14
+                font=message_font,
                 fg=self.text_color,
                 bg=self.bg_color,
                 wraplength=600,  # Reduced from 700
@@ -1194,7 +1196,11 @@ class GUICookingAssistant(CookingUI):
         def _show_loading_ui():
             # Create a loading message with animated dots (single persistent line)
             loading_text = message
-            self._loading_message_row = self._add_chat_message(loading_text, is_user=False, return_row=True)
+            # Use a different font and italic (cursive) style for the loading message
+            custom_font = ("Arial", 11, "italic")  # Example: cursive-like, fallback to italic if unavailable
+            self._loading_message_row = self._add_chat_message(
+                loading_text, is_user=False, return_row=True, font=custom_font
+            )
             # Store reference to the label for animation
             self._loading_label = None
             for widget in self._loading_message_row.winfo_children():

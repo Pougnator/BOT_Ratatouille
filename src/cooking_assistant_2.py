@@ -22,9 +22,7 @@ class CookingAssistant:
         self.timer = CookingTimer(console=None)
         self.hardware = HardwareHandler()
         self.gantt_visualizer = PlotlyGanttVisualizer(console=None)
-        
-        # Use threading Event objects for button communication
-        self._next_button_event = threading.Event()
+     
         
         # Flag to signal the assistant to stop
         self._should_stop = threading.Event()
@@ -202,8 +200,17 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
         # Store recipes for selection
         self.state_machine.set_proposed_recipes(recipes_list)
         
-    
-   
+    def notify_llm_with_loading(self, loading_message: str, notification_message: str, function_name: str = None):
+        
+        self.ui.show_loading(loading_message)
+        try:
+            if function_name is None:
+                self.agent.notify_llm_without_response(notification_message)
+            else:
+                self.agent.notify_llm_function_completed(notification_message, function_name)
+        finally:
+            self.ui.hide_loading()
+            self.ui.show_text(f"\n :)")
         
     def display_cooking_steps(self):
         if not self.state_machine.recipe_steps:
@@ -227,20 +234,28 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
         self.ui.show_text(f"\nÉtape {step_num}/{total_steps}:\n")
         self.ui.show_text(f"{current_step['description']}\n")
         self.ui.show_text(f"{current_step['conseil']}\n")
-
-        self.agent.notify_llm_without_response(f"[Systeme][INFO CONTEXTE - NE PAS REPONDRE]" + 
-        f"On vient d'afficher le texte {current_step['description'] + current_step['conseil']} " +
-        f"dans le cadre de l'étape {step_num} de la recette selectionnée" +
-        f"On attends la confirmation de l'utilisateur pour passer à l'étape suivante.")
-
+         # Show loading indicator
+        notification_message = (
+            f"[Systeme][INFO CONTEXTE - NE PAS REPONDRE] "
+            f"On vient d'afficher le texte {current_step['description'] + current_step['conseil']} "
+            f"dans le cadre de l'étape {step_num} de la recette selectionnée. "
+            f"On attends la confirmation de l'utilisateur pour passer à l'étape suivante."
+        )
+        print("Notifying the llm of the cooking step we just displayed")    
+        self.notify_llm_with_loading("Il faut tenir au courant le modèle de l'étape en cours...", notification_message)
+        # self.ui.show_loading("Il faut tenir au courant le modèle de l'étape en cours...")
+        
+       
+        print("Notification complete, now checking if need timer")
         if current_step.get('timer_necessaire'):
             step_time = current_step.get('duree_estimee_minutes')
-            self.ui.show_text(f"Voulez-vous lancer un timer de {step_time} pour cette étape? \n")
+            self.ui.show_text(f"Voulez-vous lancer un timer pour cette étape? \n")
             self.agent.notify_llm_without_response(
                 f"[Système][INFO CONTEXTE - NE PAS REPONDRE] "
                 f"L'utilisateur a reçu la question : 'Voulez-vous lancer un timer de {step_time} pour cette étape ?' "
                 f"Ne réponds pas, attends sa prochaine entrée. Si l'utilisateur veut un timer tu le lancera. Sinon, tu attends les prochains instructions."
             )
+        else: print("Timer not needed")
            
         
         # If on Raspberry Pi, display button controls guide
@@ -252,76 +267,21 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
                 "- Bouton sur GPIO 0: Back/Cancel (annuler minuteur)\n"
             )
         
-        # Clear any previous button events
-        self._next_button_event.clear()
+
         
-        # # Function to get input without blocking button presses (CLI legacy, now simplified for UI)
-        # def get_interruptible_input():
-        #     # For now, in UI mode, we only support 'next' via button;
-        #     # you can later extend this to use UI.ask_text if needed.
-        #     while True:
-        #         if self._next_button_event.is_set():
-        #             self._next_button_event.clear()
-        #             return "next"
-        #         time.sleep(0.1)
-            
-        # while True:
-        #     # Get input (might be interrupted by button press)
-        #     user_input = get_interruptible_input()
-            
-        #     if user_input == 'next':
-        #         return True
-          
-        #     # In UI-only mode, other text commands are not handled here yet
+      
                 
     def _setup_button_controls(self):
         """Set up button controls for GPIO pins."""
-        # GPIO 6: Next button (move to next step)
-        self.hardware.register_button_callback(6, self._button_next)
+      
         
-        # GPIO 19: Ask for help button
-        self.hardware.register_button_callback(19, self._button_help)
-        
-        # GPIO 0: Back/Cancel button
-        self.hardware.register_button_callback(0, self._button_back)
+ 
         
         # Start polling the buttons
         self.hardware.start_polling()
         print("✓ Button controls initialized\n")
     
-    # def _button_next(self):
-    #     """Handler for the 'Next' button (GPIO 6)"""
-    #     print("Button pressed: Next\n")
-    #     # Simulate 'next' command when in step execution
-    #     if self.state_machine.current_state == CookingState.STEP_EXECUTION:
-    #         print("Moving to next step...\n")
-    #         # Signal the event to interrupt input
-    #         self._next_button_event.set()
-    
-    # def _button_help(self):
-    #     """Handler for the 'Help' button (GPIO 19)"""
-    #     self.ui.show_text("❓ Bouton d'aide pressé. Posez votre question.\n")
-        
-       
-    #     import threading
-
-       
-    
-    # def _button_back(self):
-    #     """Handler for the 'Back/Cancel' button (GPIO 0)"""
-    #     self.ui.show_text("⏮️ Button pressed: Back/Cancel\n")
-    #     # Different behavior depending on state
-    #     if self.state_machine.current_state == CookingState.RECIPE_CONFIRMATION:
-    #         # Go back to recipe proposal
-    #         self.ui.show_text("Retour à la proposition de recettes...\n")
-    #         self.state_machine.transition_to(CookingState.RECIPE_PROPOSAL)
-    #     elif self.state_machine.current_state == CookingState.STEP_EXECUTION:
-    #         # Cancel current timer if any
-    #         active_timers = self.timer.get_active_timers()
-    #         if active_timers:
-    #             timer_id = list(active_timers.keys())[0]  # Cancel first timer
-    #             self.timer.stop_timer(timer_id)
-    #             self.ui.show_text(f"Timer '{active_timers[timer_id]['name']}' annulé\n")
+ 
 
  
     async def run(self):
@@ -463,7 +423,7 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
                     self.agent.notify_llm_without_response(f"[Systeme][INFO CONTEXTE - NE PAS REPONDRE] On passe à l'état {self.state_machine.current_state.value}")
                     self.agent.notify_llm_function_completed("La recette a été confirmée et les étapes détaillées ont été générées", "valider_et_detaille_recette")
                 # Gérer la navigation pas à pas
-                if 'navigation_action' in data:
+                if 'navigation_action' in data and self.state_machine.current_state != CookingState.RECIPE_PROPOSAL:
                     action = data.get('navigation_action')
                     if data.get('next_step'):
                         if self.state_machine.next_step():
@@ -496,6 +456,9 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
                     elif data.get('repeat_step'):
                         self.execute_current_step()
                         self.agent.notify_llm_function_completed("Répétition de l'étape actuelle", "navigation_pas_a_pas")
+                elif 'navigation_action' in data and self.state_machine.current_state == CookingState.RECIPE_PROPOSAL:
+                    print("Navigation function called during a wrong state - ignoring it")
+                    self.agent.notify_llm_function_completed("Navigation function called during a wrong state - ignoring it", "navigation_pas_a_pas")
             # Display text response - process_command will handle next input via on_user_entry
             if text_response:
                 self.ui.show_text(f"{text_response}\n")

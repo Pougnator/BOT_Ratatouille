@@ -89,7 +89,7 @@ Lorsque l'utilisateur te demande de lancer un minuteur, tu DOIS impérativement 
 Navigation pas à pas :
 Attention, pas besoin de génerer de texte supplémentaire dans la réponse.
 Règle d'OR : tu ne lancera PAS de fonction navigation pas_à_pas si tu n'est pas dans l'état RECIPE_PREVIEW ou STEP_EXECUTION.
-Surtout, tu ne lanceras PAS de fonction navigation pas_à_pas si tu es dans l'état STARTING ou RECIPE_PROPOSAL.
+Surtout, tu ne lanceras PAS de fonction navigation pas_à_pas si tu es dans l'état "starting","ingredient_collection","recipe_proposal".
  Ce n'est que dans ces deux états que tu peux utiliser la fonction navigation_pas_a_pas pour guider l'utilisateur :
 - Si l'utilisateur dit ou confirme qu'il veut commencer la préparation, appelle navigation_pas_a_pas avec l'action DEMARRER.
 - Si l'utilisateur dit "suivant", "next", "étape suivante", appelle navigation_pas_a_pas avec l'action SUIVANT.
@@ -107,8 +107,9 @@ def propose_recipe_options(
     conseil_general: str
 ):
     """
-    Utiliser cette fonction pour proposer 3 à 5 choix de recettes basées sur les ingrédients de l'utilisateur, pour un nombre de personnes fourni.
-    
+    Utiliser cette fonction pour proposer 1 à 5 choix de recettes basées sur les ingrédients de l'utilisateur, pour un nombre de personnes fourni.
+    Par défaut propose 4 recettes, sauf si l'utilisateur demande un nombre de recettes différent. 
+
     Args:
         options: Une liste d'objets recettes résumés.
         conseil_general: Un petit texte d'intro ou de conseil sur les ingrédients fournis (ex: "Vos tomates semblent mûres, profitez-en !").
@@ -133,8 +134,6 @@ def valider_et_detaille_recette(id_recette: str, recette_detaillee: RecetteSteps
     Valide le choix de l'utilisateur et génère les étapes détaillées, ainsi qu'une phrase d'introduction de la recette et un conseil gourmand final.
     Change l'état vers 'cooking_guidance'. Ne doit être appelée que dans l'état RECIPE_PROPOSAL.
     
-    Note: Cette fonction ne devrait pas modifier l'état directement.
-    Le changement d'état devrait être géré dans cooking_assistant_2.py.
     """
     # Cette fonction est uniquement utilisée comme signature pour Google Generative AI
     # Le traitement réel se fait dans get_response() de LLMAgent
@@ -146,13 +145,11 @@ def navigation_pas_a_pas(action: NavigationAction):
     À appeler UNIQUEMENT si l'utilisateur confirme vouloir commencer ou continuer le guidage pas à pas de la recette.
     Args:
         action: L'action à effectuer en fonction de la voloté de l'utilisateur (START, SUIVANT, PRECEDENT, STOP)
-    Returns:
-        La réponse à l'action
+    
     """
-    #Ici on gère la navigation pas à pas lorsque nous sommes dans l'état RECIPE_PREVIEW
-    #Si l'utilisateur confirme avoir terminé une étape, ou bien qu'il veut passer à l'étape suivante, on passe à l'étape suivante
-    if action == NavigationAction.SUIVANT:
-        return "next_step"
+    
+   
+    return "New action infered from user input"
 # ============================================================================
 # CLASSE LLM AGENT
 # ============================================================================
