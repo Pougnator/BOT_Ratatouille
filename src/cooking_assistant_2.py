@@ -109,7 +109,8 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
                     
                     for ing in ingredients:
                         recipe_text += f" - {ing.get('name')} "
-               
+                print("saving the recipes")
+                self.state_machine.set_proposed_recipes(recipes_data['recettes'])
                    
                
               
@@ -165,41 +166,45 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
         
        
 
-    def propose_recipes(self):
-        import time
-        start_time = time.time()
-        self.ui.show_text("\nAnalyse des ingrédients et recherche de recettes...\n")
+    # def propose_recipes(self):
+    #     import time
+    #     start_time = time.time()
+    #     self.ui.show_text("\nAnalyse des ingrédients et recherche de recettes...\n")
         
-        # Check if there's an additional recipe request
-        additional_request = self.state_machine.additional_recipe_request
+    #     # Check if there's an additional recipe request
+    #     additional_request = self.state_machine.additional_recipe_request
         
-        # Show loading indicator
-        self.ui.show_loading("Recherche de recettes...")
+    #     # Show loading indicator
+    #     self.ui.show_loading("Recherche de recettes...")
         
-        try:
-            recipes_response = self.agent.propose_recipes(
-                self.state_machine.ingredients,
-                self.state_machine.servings,
-                additional_request
-            )
-        finally:
-            # Hide loading indicator
-            self.ui.hide_loading()
-            total_time = time.time() - start_time
-            print(f"[TIMING] propose_recipes (cooking_assistant) total: {total_time:.2f}s")
+    #     try:
+    #         recipes_response = self.agent.propose_recipes(
+    #             self.state_machine.ingredients,
+    #             self.state_machine.servings,
+    #             additional_request
+    #         )
+    #     finally:
+    #         # Hide loading indicator
+    #         self.ui.hide_loading()
+    #         total_time = time.time() - start_time
+    #         print(f"[TIMING] propose_recipes (cooking_assistant) total: {total_time:.2f}s")
         
-        # Clear the additional request after using it
-        self.state_machine.clear_additional_recipe_request()
+    #     # Clear the additional request after using it
+    #     self.state_machine.clear_additional_recipe_request()
         
-        # Extract recipes list from response
-        recipes_list = recipes_response.get("recipes", [])
+    #     # Extract recipes list from response
+    #     recipes_list = recipes_response.get("recipes", [])
         
-        # Use UI method to display recipes
-        self.ui.show_recipes(recipes_list)
+    #     # Use UI method to display recipes
+    #     self.ui.show_recipes(recipes_list)
             
-        # Store recipes for selection
-        self.state_machine.set_proposed_recipes(recipes_list)
-        
+    #     # Store recipes for selection
+    #     self.state_machine.set_proposed_recipes(recipes_list)
+    
+    def get_detailed_ingredients(self, list_of_recipes: list):
+        data, text_response = self.agent.get_response("donne moi la liste des ingrédients detaillées pour toutes les recettes de la liste suivante: " + str(list_of_recipes))
+        return data
+
     def notify_llm_with_loading(self, loading_message: str, notification_message: str, function_name: str = None):
         
         self.ui.show_loading(loading_message)
@@ -331,6 +336,9 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
             # Handle structured data (function calls)
             if data:
                 # Handle different types of structured responses
+                if 'details' in data:
+                    print("ingredient details found in data")
+                    print(data["details"])
                 if 'conseil' in data:
                     self.ui.show_text(data['conseil'])
                 if 'recettes' in data:  # propose_recipe_options was called
@@ -338,10 +346,39 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
                     self._events['ingredients_available'].set()
                     # Display recipes using dedicated method
                     self._display_recipes(data)
-                 
+                    
+                    # Stocker la liste complète des recettes proposées dans la state machine
+                    self.state_machine.set_proposed_recipes(data.get("recettes", []))
+                    
+                    # Transition vers RECIPE_PROPOSAL
                     self.state_machine.transition_to(CookingState.RECIPE_PROPOSAL)
-                    self.agent.notify_llm_without_response(f"[Systeme][INFO CONTEXTE - NE PAS REPONDRE] On passe à l'état {self.state_machine.current_state.value}")
-                    self.agent.notify_llm_function_completed("Les recettes ont été affichées à l'utilisateur. Il est en train de réfléchir et va choisir une recette.", "propose_recipe_options")
+                    self.agent.notify_llm_without_response(
+                        f"[Systeme][INFO CONTEXTE - NE PAS REPONDRE] On passe à l'état {self.state_machine.current_state.value}"
+                    )
+                    self.agent.notify_llm_function_completed(
+                        "Les recettes ont été affichées à l'utilisateur. Il est en train de réfléchir et va choisir une recette.",
+                        "propose_recipe_options"
+                    )
+                    
+                    # Demander au LLM de générer les quantités d'ingrédients pour chaque recette proposée
+                    recepies_list = [recipe.get("titre") for recipe in self.state_machine.proposed_recipes]
+                    print(f"Recipes list: {recepies_list}")
+                    prompt_ingredients = (
+                        "Pour chacune des recettes suivantes, tu dois IMPÉRATIVEMENT appeler la fonction "
+                        "get_ingredients_quantities.\n"
+                        "Pour chaque recette, tu construis un objet RecetteDetails avec :\n"
+                        "- name = titre de la recette\n"
+                        "- ingredients = une liste d'ingrédients avec quantité et unité\n"
+                        "- difficulty et calories adaptés\n"
+                        "Ne réponds PAS en texte libre, utilise uniquement get_ingredients_quantities.\n"
+                        f"Liste des recettes : {recepies_list}"
+                    )
+                    ingredients_data, _ = self.agent.get_response(prompt_ingredients)
+                    if ingredients_data and "recipe" in ingredients_data:
+                        print("Ingredient quantities generated by LLM:")
+                        print(ingredients_data["recipe"])
+                        # Optionnel : stocker ces infos si tu veux les réutiliser plus tard
+                        self._event_data['ingredients_details'] = ingredients_data["recipe"]
                 if 'timer_started' in data and data.get('timer_started'):
                     # Lancer le minuteur avec les données reçues
                     duree_secondes = data.get('duree_secondes')

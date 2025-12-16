@@ -24,13 +24,15 @@ class Ingredient(BaseModel):
     unit: str = Field(description="Unité de mesure de l'ingrédient")
     available: bool = Field(description="True si l'ingrédient est disponible, False sinon")
 class RecetteResume(BaseModel):
-    id: str = Field(description="L'identifiant unique de la recette")
     titre: str = Field(description="Le titre de la recette")
     description_courte: str = Field(description="Une brève description de la recette")
-    ingredients: List[Ingredient] = Field(description="La liste des ingrédients de la recette")
     temps_prepa_minutes: int = Field(description="Le temps de préparation de la recette en minutes")
 
-
+class RecetteDetails(BaseModel):
+    name: str = Field(description="Le nom de la recette")
+    ingredients: List[Ingredient] = Field(description="La liste des ingrédients de la recette")
+    difficulty: str = Field(description="La difficulité de la recette")
+    calories: int = Field(description="Le nombre de calories de la recette par portion")
 class EtapePreparation(BaseModel):
     numero: int = Field(description="Numéro de l'étape")
     description: str = Field(description="Instruction détaillée de l'action")
@@ -63,38 +65,125 @@ Rôle : Tu es un Assistant Chef Cuisinier expert et créatif. Tu aimes des recet
 Objectif : Tu aides l'utilisateur à cuisiner avec ce qu'il a dans son frigo.
 
 #Déroulement#:
-La conversation va se dérouler en plusieurs états :
-    "starting"
-    "ingredient_collection"
-    "recipe_proposal"
-    "recipe_preview"
-    "step_execution"
-    "completed"
-Tu sera averti de chaque changement d'état
+La conversation va se dérouler en plusieurs états : "starting", "ingredient_collection", "recipe_proposal", "recipe_preview", "step_execution", "completed".
+Tu seras averti de chaque changement d'état.
 
-Règle d'OR :
-Lorsque l'utilisateur te donne une liste d'ingrédients et un nombre de personnes, tu ne dois PAS écrire de recettes en texte.
-Tu DOIS impérativement appeler la fonction propose_recipe_options.
-Si l'utilisateur te demande des details sur une recettes, tu n'appelles PAS de fonction. Tu réponds simplement en texte.
-Si l'utilisateur choisit une recette, tu DOIS impérativement appeler la fonction valider_et_detaille_recette. 
-Consignes de génération :
-1. Génère toujours 4 suggestions variées.
-2. Le champ ingredients_complets doit être une liste JSON stricte et fiable.
-3. N'invente pas d'ingrédients majeurs si l'utilisateur ne les a pas.
-4. Sois alléchant dans le titre et la description_courte.
-5. Tu n'est pas obligé de proposer des recettes avec tous les ingrédients fournis. Ce qui prime est la qualité des recettes et leur variété.
+### RÈGLES D'OR ET PRIORITÉS ###
 
-Lorsque l'utilisateur te demande de lancer un minuteur, tu DOIS impérativement appeler la fonction lancer_minuteur.
+1.  **PRIORITÉ ABSOLUE À LA DEMANDE UTILISATEUR :** Avant de décider d'une action, analyse si l'utilisateur donne de nouveaux ingrédients ou s'il réagit à une proposition existante.
 
-Navigation pas à pas :
-Attention, pas besoin de génerer de texte supplémentaire dans la réponse.
-Règle d'OR : tu ne lancera PAS de fonction navigation pas_à_pas si tu n'est pas dans l'état RECIPE_PREVIEW ou STEP_EXECUTION.
-Surtout, tu ne lanceras PAS de fonction navigation pas_à_pas si tu es dans l'état "starting","ingredient_collection","recipe_proposal".
- Ce n'est que dans ces deux états que tu peux utiliser la fonction navigation_pas_a_pas pour guider l'utilisateur :
-- Si l'utilisateur dit ou confirme qu'il veut commencer la préparation, appelle navigation_pas_a_pas avec l'action DEMARRER.
-- Si l'utilisateur dit "suivant", "next", "étape suivante", appelle navigation_pas_a_pas avec l'action SUIVANT.
-- Si l'utilisateur dit "précédent", "back", "étape précédente", appelle navigation_pas_a_pas avec l'action PRECEDENT.
+2.  **INTERDICTION D'ÉCRITURE :**
+    * Ne JAMAIS écrire une recette complète ou une liste d'ingrédients détaillée dans le chat.
+    * Ne JAMAIS répéter une proposition de recette que tu viens de faire.
 
+3.  **DÉCLENCHEURS DE FONCTIONS (Logique stricte) :**
+
+    * **CAS A : L'utilisateur donne des ingrédients / change d'avis sur les ingrédients / change le nombre de personnes.**
+        -> Action : Tu DOIS appeler `propose_recipe_options`.
+        -> Exemple : "J'ai du poulet", "En fait on est 3", "Je n'ai plus de lait".
+
+    * **CAS B : L'utilisateur demande des précisions sur une des options proposées.**
+        -> Indice : Il utilise des mots comme "la première", "la 2ème", "celle au curry", "plus de détails".
+        -> Action : Tu DOIS appeler `more_details_on_recipe` (avec le numéro ou le nom).
+        -> INTERDICTION : N'appelle PAS `propose_recipe_options` ici.
+        -> INTERDICTION : N'appelle PAS `get_detailed_ingredients`.
+
+    * **CAS C : L'utilisateur valide/choisit une recette pour cuisiner.**
+        -> Action : Tu DOIS appeler `valider_et_detaille_recette`.
+
+    * **CAS D : L'utilisateur demande un minuteur.**
+        -> Action : Tu DOIS appeler `lancer_minuteur`.
+
+    * **CAS E : L'utilisateur demande explicitement de lancer la fonction get_ingredients_quantities pour une ou plusieurs recettes.**
+        -> Action : Tu DOIS appeler `get_ingredients_quantities`.
+        -> INTERDICTION : Tu n'appelleras pas 'get_detailed_ingredients' si l'utilisateur ne te demande pas explicitement de lancer cette fonction, en citant le nom de la fonction.
+
+4.  **Navigation pas à pas :**
+    * N'utilise `navigation_pas_a_pas` QUE dans les états "RECIPE_PREVIEW" ou "STEP_EXECUTION".
+    * Si l'utilisateur dit "commencer", "go", "c'est parti" -> Action : `navigation_pas_a_pas` (DEMARRER).
+    * Si l'utilisateur dit "suivant" -> Action : `navigation_pas_a_pas` (SUIVANT).
+    * Si l'utilisateur dit "précédent" -> Action : `navigation_pas_a_pas` (PRECEDENT).
+
+### Consignes de génération (Tone & Style) ###
+1.  Génère toujours 4 suggestions variées lors de l'appel à `propose_recipe_options`.
+2.  Propose des recettes variées géographiquement et gustativement.
+3.  Sois alléchant dans le titre et la description courte.
+4.  Si tu viens d'afficher des recettes via une fonction, ne les résume pas à nouveau dans ta réponse textuelle. Invite plutôt l'utilisateur à en choisir une.
+
+### Exemples de dialogue (Few-Shot) ###
+
+Exemple 1:
+
+Utilisateur : "Je veux une recette de poulet avec des pommes de terre."
+Assistant : Bonjour ! C'est un duo classique et très réconfortant. Pour que je puisse ajuster les quantités et vous proposer les meilleures idées, pour combien de convives cuisinez-vous aujourd'hui ?
+Utilisateur :"Deux personnes? J'ai des tomates aussi"
+Assistant : C'est noté ! Du poulet, des pommes de terre et des tomates pour 2 personnes. C'est une base excellente qui offre plein de possibilités, du mijoté au rôti. Laissez-moi vous proposer 4 options variées pour sublimer ces ingrédients.
+fonction propose_recipe_options lancée
+Utilisateur :"Je veux plus de details sur la première recette"
+Assistant : Excellent choix, cette recette a beaucoup de caractère ! Je vous donne tout de suite plus d'informations sur les saveurs et le style de ce plat pour vous aider à décider.
+fonction more_details_on_recipe lancée
+Utilisateur :"En fait je n'ai plus de poulet, mais j'ai du toffu"
+Assistant : Aucun souci ! La cuisine, c'est aussi savoir s'adapter. Le tofu est une excellente alternative qui va très bien absorber les saveurs des tomates et accompagner les pommes de terre. Je change mon fusil d'épaule et je vous propose 4 nouvelles idées végétariennes et gourmandes.
+fonction propose_recipe_options lancée
+Utilisateur :"Dis moi en plus sur la deuxième recette"
+Assistant : Celle-ci est très intéressante pour travailler la texture du tofu et le rendre gourmand. Voici un aperçu plus complet de ce qui vous attend avec cette recette.
+fonction more_details_on_recipe lancée
+
+Exemple 2:
+
+Voici la simulation du dialogue :
+Utilisateur :"J'ai des pommes de terre et du fenouil, proposes moi des recettes pour 3 personnes"
+Assistant : Bonjour ! Pommes de terre et fenouil, c'est un mariage très élégant, le côté anisé du fenouil réveille la douceur de la pomme de terre. Pour 3 personnes, c'est parfait. Laissez-moi vous proposer 4 idées pour sublimer ce duo.
+fonction propose_recipe_options lancée
+Utilisateur :"Ah attends, en fait j'ai aussi des oeufs et du curry"
+Assistant : Ça change tout, et en bien ! Le curry fonctionne à merveille avec le fenouil, et les œufs vont nous permettre d'avoir un plat complet et riche en protéines. Je mets à jour mes suggestions pour intégrer ces nouvelles saveurs épicées.
+fonction propose_recipe_options lancée
+Utilisateur :"Finalement on sera 5."
+Assistant : C'est noté, on agrandit la tablée ! Avec 5 convives, on va privilégier des plats conviviaux ou faciles à partager. Je réajuste les quantités et le type de recettes pour que tout le monde se régale.
+fonction propose_recipe_options lancée
+Utilisateur :"C'est quoi exactement la première recette?"
+Assistant : C'est une recette qui mise tout sur le mélange d'épices et la texture. Voici un descriptif plus précis de ce plat pour vous aider à vous projeter.
+fonction more_details_on_recipe lancée
+Utilisateur :"Par quoi est-ce que je peux remplacer le premier ingrédient de la première recette"
+Assistant : Si vous parlez des pommes de terre, vous pouvez très bien les remplacer par de la patate douce pour un résultat plus sucré qui s'accorde divinement avec le curry, ou même par du chou-fleur pour une version plus légère et "low carb". Le temps de cuisson sera juste un peu plus court !
+Utilisateur :"Ok partons sur la deuxième recette finalement"
+Assistant : Excellent choix ! C'est une recette savoureuse qui fait toujours l'unanimité. Je valide ce choix et je vous détaille tout ce qu'il faut savoir pour la réussir (ingrédients précis et étapes).
+fonction valider_et_detaille_recette lancée
+
+
+Exemple 3:
+Utilisateur: "Salut Chef, je veux faire des pâtes ce soir, j'ai de la crème, des champignons et du parmesan."
+Assistant : "Bonjour ! Un trio gagnant pour un dîner réconfortant. Pâtes, crème et champignons, c'est l'assurance d'une sauce onctueuse. Pour combien de personnes dois-je calibrer les recettes ?"
+Utilisateur :"Nous sommes 2."
+Assistant : "C'est noté, un dîner en tête-à-tête ou entre amis. Voici 4 variations autour de vos ingrédients pour sublimer vos pâtes."
+fonction propose_recipe_options lancée
+Utilisateur :"Ah par contre, je n'ai vraiment pas le temps, il me faut quelque chose de prêt en 15 min max."
+Assistant : "Entendu ! On passe en mode "cuisine express". Je filtre mes idées pour ne garder que celles qui cuisent pendant que l'eau des pâtes bout. Voici 4 nouvelles propositions ultra-rapides."
+fonction propose_recipe_options lancée
+Utilisateur :"Dis m'en un peu plus sur la deuxième recette."
+Assistant : "Celle-ci mise tout sur la puissance du parmesan pour lier la sauce sans cuisson longue. Voici les détails croustillants sur ce plat."
+fonction more_details_on_recipe lancée
+Utilisateur :"Ça marche, on part là-dessus."
+Assistant : "Très bon choix pour un repas rapide et savoureux. Je vous prépare la liste précise et les étapes de réalisation."
+fonction valider_et_detaille_recette lancée
+
+
+Exemple 4:
+Utilisateur:"Salut Chef, je veux faire des pâtes ce soir, j'ai de la crème, des champignons et du parmesan."
+Assistant : "Bonjour ! Un trio gagnant pour un dîner réconfortant. Pâtes, crème et champignons, c'est l'assurance d'une sauce onctueuse. Pour combien de personnes dois-je calibrer les recettes ?"
+Utilisateur :"Nous sommes 2."
+Assistant : "C'est noté, un dîner en tête-à-tête ou entre amis. Voici 4 variations autour de vos ingrédients pour sublimer vos pâtes.
+fonction propose_recipe_options lancée
+
+Utilisateur :"Ah par contre, je n'ai vraiment pas le temps, il me faut quelque chose de prêt en 15 min max."
+Assistant : "Entendu ! On passe en mode "cuisine express". Je filtre mes idées pour ne garder que celles qui cuisent pendant que l'eau des pâtes bout. Voici 4 nouvelles propositions ultra-rapides."
+fonction propose_recipe_options lancée
+Utilisateur :"Dis m'en un peu plus sur la deuxième recette."
+Assistant : Celle-ci mise tout sur la puissance du parmesan pour lier la sauce sans cuisson longue. Voici les détails croustillants sur ce plat.
+fonction more_details_on_recipe lancée
+Utilisateur :"Ça marche, on part là-dessus."
+Assistant : "Très bon choix pour un repas rapide et savoureux. Je vous prépare la liste précise et les étapes de réalisation."
+fonction valider_et_detaille_recette lancée
 """
 
 
@@ -117,6 +206,33 @@ def propose_recipe_options(
     # Dans la vraie vie, ici tu ne fais rien d'autre que retourner les données 
     # pour que ton Front-End les affiche.
     return "Options de recettes envoyées au client."
+
+def more_details_on_recipe(
+    recipe_name: str,
+    recipe_details: str):
+
+    """
+    Utiliser cette fonction pour donner plus de détails ou explications sur une recette donnée.
+
+    Args:
+        recipe_name: Nom de la recette
+        recipe_details: Un petit texte qui détaille la recette, explique rapidement ses ingrédients (pas besoin d'une liste detailée d'ingrédients ici) et les principales étapes de préparation.
+        Et précise pourquoi cette recette est délicieuse, et comment l'améliorer d'avantage encore. 
+    """
+    return "Détails de la recette générés"
+def get_ingredients_quantities(
+    details: List[RecetteDetails]
+    ):
+
+    """
+    Utiliser cette fonction uniquement quand l'utilisateur cite explicitement le nom de la fonction dans sa requête.
+
+
+    Args: 
+        
+        details: Une liste d'objets recettes détaillés avec les champs ingrédients, difficulité et calories par portion.
+    """
+    return "Détails des recettes générés et affichés à l'utilisateur"
 
 def lancer_minuteur(duree_secondes: int, label: str):
     """
@@ -160,7 +276,7 @@ class LLMAgent:
         self.state_machine = state_machine
         
         # Outils de base toujours disponibles
-        self.base_tools = [propose_recipe_options, lancer_minuteur, valider_et_detaille_recette, navigation_pas_a_pas]
+        self.base_tools = [propose_recipe_options, get_ingredients_quantities, more_details_on_recipe, lancer_minuteur, valider_et_detaille_recette, navigation_pas_a_pas]
         
         # # Construire la liste d'outils initiale
         # tools_list = self._get_tools_for_current_state()
@@ -248,10 +364,12 @@ class LLMAgent:
                 #Si la fonction est la liste de proposition de recettes
                 if fn_name == 'propose_recipe_options':
                     print(f"\n[SYSTEME] 📋 PROPOSITION DE RECETTES demandée par le LLM")
-                    structured_data = {
-                        "conseil": fn_args.get("conseil_general"),
-                        "recettes": []
-                    }
+                    if structured_data is None:
+                        structured_data = {}
+                    # Initialiser seulement la partie liée aux recettes pour ne pas écraser d'autres infos
+                    if "recettes" not in structured_data:
+                        structured_data["conseil"] = fn_args.get("conseil_general")
+                        structured_data["recettes"] = []
                     # On boucle sur la liste des recettes proposées par l'IA
                     # (fn_args est un objet spécial Map de Google, on le transforme en dict)
                     for recette in fn_args.get("options"):
@@ -274,7 +392,7 @@ class LLMAgent:
                  
 
                         structured_data["recettes"].append({
-                            "id": recette.get("id"),
+                           
                             "titre": recette.get("titre"),
                             "ingredients": ingredients_norm,
                             "temps_prepa_minutes": recette.get("temps_prepa_minutes"),
@@ -288,24 +406,65 @@ class LLMAgent:
                     duree_secondes = fn_args.get("duree_secondes")
                     label = fn_args.get("label")
                     print(f"\n[SYSTEME] ⏱️ TIMER LANCÉ : {duree_secondes} secondes pour '{label}'")
-                    structured_data = {
-                        "timer_started": True,
-                        "duree_secondes": duree_secondes,
-                        "timer_name": label
-                    }
+                    if structured_data is None:
+                        structured_data = {}
+                    structured_data["timer_started"] = True
+                    structured_data["duree_secondes"] = duree_secondes
+                    structured_data["timer_name"] = label
+             
+                elif fn_name == 'get_ingredients_quantities':
+                    print(f"\n[SYSTEME] 🔍 QUANTITÉS D'INGRÉDIENTS demandées par le LLM")
+                    # Préparer / compléter une structure de données pour détailler chaque recette
+                    if structured_data is None:
+                        structured_data = {}
+                    if "recipe" not in structured_data:
+                        structured_data["recipe"] = []
+                    details_list = fn_args.get("details") or []
+                    for recipe in details_list:
+                        name = recipe.get("name")
+                        difficulty = recipe.get("difficulty")
+                        calories = recipe.get("calories")
+                        ingredients = recipe.get("ingredients") or []
+                        ingredients_norm = []
+                        for ingredient in ingredients:
+                            ingredients_norm.append({
+                                "name": ingredient.get("name"),
+                                "quantity": ingredient.get("quantity"),
+                                "unit": ingredient.get("unit"),
+                                "available": ingredient.get("available"),
+                            })
+                        structured_data["recipe"].append({
+                            "name": name,
+                            "difficulty": difficulty,
+                            "calories": calories,
+                            "ingredients": ingredients_norm
+                        })
+
+                              
+                elif fn_name == 'more_details_on_recipe':
+                    print(f"\n[SYSTEME] 🔍 DETAILS DE LA RECETTE demandés par le LLM")
+                    recipe_name = fn_args.get("recipe_name")
+                    recipe_details = fn_args.get("recipe_details")
+                    if structured_data is None:
+                        structured_data = {}
+                    structured_data["recipe_name"] = recipe_name
+                    structured_data["recipe_details"] = recipe_details
+                   
+                    
                 elif fn_name == 'valider_et_detaille_recette':
                     id_recette = fn_args.get("id_recette")
                     print(f"\n[SYSTEME] 🔒 VALIDATION DE RECETTE : {id_recette}")
                     recette_detaillee = fn_args.get("recette_detaillee")
-                    structured_data = {
-                        "recipe_confirmed": True,  # Flag pour indiquer que la recette est confirmée
-                        "id_recette": id_recette,
-                        "titre": recette_detaillee.get("titre") if recette_detaillee else None,
-                        "phrase_intro": recette_detaillee.get("phrase_intro") if recette_detaillee else None,
-                        "conseil_gourmand": recette_detaillee.get("conseil_gourmand") if recette_detaillee else None,
-                        "steps": recette_detaillee.get("steps") if recette_detaillee else None,
-                        "details_techniques": []
-                    }
+                    if structured_data is None:
+                        structured_data = {}
+                    structured_data["recipe_confirmed"] = True  # Flag pour indiquer que la recette est confirmée
+                    structured_data["id_recette"] = id_recette
+                    structured_data["titre"] = recette_detaillee.get("titre") if recette_detaillee else None
+                    structured_data["phrase_intro"] = recette_detaillee.get("phrase_intro") if recette_detaillee else None
+                    structured_data["conseil_gourmand"] = recette_detaillee.get("conseil_gourmand") if recette_detaillee else None
+                    structured_data["steps"] = recette_detaillee.get("steps") if recette_detaillee else None
+                    if "details_techniques" not in structured_data:
+                        structured_data["details_techniques"] = []
                      # On boucle sur la liste des détails techniques
                     if recette_detaillee and recette_detaillee.get("details_techniques"):
                         for detail in recette_detaillee.get("details_techniques"):
@@ -321,9 +480,9 @@ class LLMAgent:
                 elif fn_name == 'navigation_pas_a_pas':
                     action = fn_args.get("action")
                     print(f"\n[SYSTEME] 🧭 NAVIGATION PAS À PAS : {action}")
-                    structured_data = {
-                        "navigation_action": action
-                    }
+                    if structured_data is None:
+                        structured_data = {}
+                    structured_data["navigation_action"] = action
                     # Déterminer l'action à effectuer
                     if action == NavigationAction.SUIVANT:
                         structured_data["next_step"] = True
@@ -387,17 +546,26 @@ class LLMAgent:
 if __name__ == "__main__":
     agent = LLMAgent()
     data, response_txt = agent.get_response("Je veux une recette de poulet avec des pommes de terre")
+    print("----------Je veux une recette de poulet avec des pommes de terre----------")
     print("Data: ", data)
     print("Response: ", response_txt)
     data, response_txt = agent.get_response("Deux personnes? J'ai des tomates aussi")
+    print("----------Deux personnes? J'ai des tomates aussi----------")
     print("Data: ", data)
     print("Response: ", response_txt)
-    print(response_txt)
+    
     notify_response = agent.notify_llm_function_completed("Les recettes ont été affichées à l'utilisateur. Il est en train de réfléchir", "propose_recipe_options")
+    print("----------Je veux plus de details sur la première recette----------")
     data, response_txt = agent.get_response("Je veux plus de details sur la première recette")
     print("Data: ",data)
     print("Response: ", response_txt)
     
     data, response_txt = agent.get_response("En fait je n'ai plus de poulet, mais j'ai du toffu")
+    print("----------En fait je n'ai plus de poulet, mais j'ai du toffu, changes les recettes----------")
+    print("Data: ", data)
+    print("Response: ", response_txt)
+
+    data, response_txt = agent.get_response("Dis mois en plus sur la deuxième recette")
+    print("----------Dis mois en plus sur la deuxième recette----------")
     print("Data: ", data)
     print("Response: ", response_txt)
