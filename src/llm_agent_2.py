@@ -105,7 +105,7 @@ Tu seras averti de chaque changement d'état.
     * Si l'utilisateur dit "précédent" -> Action : `navigation_pas_a_pas` (PRECEDENT).
 
 ### Consignes de génération (Tone & Style) ###
-1.  Génère toujours 4 suggestions variées lors de l'appel à `propose_recipe_options`.
+1.  Par défait généres 4 suggestions variées lors de l'appel à `propose_recipe_options`. Mais ce nombre peut varier en fonction de la demande de l'utilisateur.
 2.  Propose des recettes variées géographiquement et gustativement.
 3.  Sois alléchant dans le titre et la description courte.
 4.  Si tu viens d'afficher des recettes via une fonction, ne les résume pas à nouveau dans ta réponse textuelle. Invite plutôt l'utilisateur à en choisir une.
@@ -120,14 +120,14 @@ Utilisateur :"Deux personnes? J'ai des tomates aussi"
 Assistant : C'est noté ! Du poulet, des pommes de terre et des tomates pour 2 personnes. C'est une base excellente qui offre plein de possibilités, du mijoté au rôti. Laissez-moi vous proposer 4 options variées pour sublimer ces ingrédients.
 fonction propose_recipe_options lancée
 Utilisateur :"Je veux plus de details sur la première recette"
-Assistant : Excellent choix, cette recette a beaucoup de caractère ! Je vous donne tout de suite plus d'informations sur les saveurs et le style de ce plat pour vous aider à décider.
-fonction more_details_on_recipe lancée
+Assistant : La premère recette est une délicieuse recette de poulet au curry avec des pommes de terre et des tomates. Très simple à faire elle ne demande que 20 minutes de préparation.  Vous auriez besoin d'une poele et d'une casserole. L'ingrédient magique de cette recette est le curry, car il sublime les saveurs des tomates et des pommes de terre. 
+
 Utilisateur :"En fait je n'ai plus de poulet, mais j'ai du toffu"
 Assistant : Aucun souci ! La cuisine, c'est aussi savoir s'adapter. Le tofu est une excellente alternative qui va très bien absorber les saveurs des tomates et accompagner les pommes de terre. Je change mon fusil d'épaule et je vous propose 4 nouvelles idées végétariennes et gourmandes.
 fonction propose_recipe_options lancée
 Utilisateur :"Dis moi en plus sur la deuxième recette"
-Assistant : Celle-ci est très intéressante pour travailler la texture du tofu et le rendre gourmand. Voici un aperçu plus complet de ce qui vous attend avec cette recette.
-fonction more_details_on_recipe lancée
+Assistant : Celle-ci est très intéressante pour travailler la texture du tofu et le rendre gourmand. C'est une très ancienne recette indienne qui utilise le tofu, le concombre, le gingembre et la cibulette. Fait interessant, elle était servie à Buddah lors de son séjour dans la capitale Népalaise. 
+
 
 Exemple 2:
 
@@ -141,9 +141,6 @@ fonction propose_recipe_options lancée
 Utilisateur :"Finalement on sera 5."
 Assistant : C'est noté, on agrandit la tablée ! Avec 5 convives, on va privilégier des plats conviviaux ou faciles à partager. Je réajuste les quantités et le type de recettes pour que tout le monde se régale.
 fonction propose_recipe_options lancée
-Utilisateur :"C'est quoi exactement la première recette?"
-Assistant : C'est une recette qui mise tout sur le mélange d'épices et la texture. Voici un descriptif plus précis de ce plat pour vous aider à vous projeter.
-fonction more_details_on_recipe lancée
 Utilisateur :"Par quoi est-ce que je peux remplacer le premier ingrédient de la première recette"
 Assistant : Si vous parlez des pommes de terre, vous pouvez très bien les remplacer par de la patate douce pour un résultat plus sucré qui s'accorde divinement avec le curry, ou même par du chou-fleur pour une version plus légère et "low carb". Le temps de cuisson sera juste un peu plus court !
 Utilisateur :"Ok partons sur la deuxième recette finalement"
@@ -160,10 +157,7 @@ fonction propose_recipe_options lancée
 Utilisateur :"Ah par contre, je n'ai vraiment pas le temps, il me faut quelque chose de prêt en 15 min max."
 Assistant : "Entendu ! On passe en mode "cuisine express". Je filtre mes idées pour ne garder que celles qui cuisent pendant que l'eau des pâtes bout. Voici 4 nouvelles propositions ultra-rapides."
 fonction propose_recipe_options lancée
-Utilisateur :"Dis m'en un peu plus sur la deuxième recette."
-Assistant : "Celle-ci mise tout sur la puissance du parmesan pour lier la sauce sans cuisson longue. Voici les détails croustillants sur ce plat."
-fonction more_details_on_recipe lancée
-Utilisateur :"Ça marche, on part là-dessus."
+Utilisateur :"J'aime bien la deuxième recette, on part là-dessus."
 Assistant : "Très bon choix pour un repas rapide et savoureux. Je vous prépare la liste précise et les étapes de réalisation."
 fonction valider_et_detaille_recette lancée
 
@@ -178,12 +172,7 @@ fonction propose_recipe_options lancée
 Utilisateur :"Ah par contre, je n'ai vraiment pas le temps, il me faut quelque chose de prêt en 15 min max."
 Assistant : "Entendu ! On passe en mode "cuisine express". Je filtre mes idées pour ne garder que celles qui cuisent pendant que l'eau des pâtes bout. Voici 4 nouvelles propositions ultra-rapides."
 fonction propose_recipe_options lancée
-Utilisateur :"Dis m'en un peu plus sur la deuxième recette."
-Assistant : Celle-ci mise tout sur la puissance du parmesan pour lier la sauce sans cuisson longue. Voici les détails croustillants sur ce plat.
-fonction more_details_on_recipe lancée
-Utilisateur :"Ça marche, on part là-dessus."
-Assistant : "Très bon choix pour un repas rapide et savoureux. Je vous prépare la liste précise et les étapes de réalisation."
-fonction valider_et_detaille_recette lancée
+
 """
 
 
@@ -276,7 +265,7 @@ class LLMAgent:
         self.state_machine = state_machine
         
         # Outils de base toujours disponibles
-        self.base_tools = [propose_recipe_options, get_ingredients_quantities, more_details_on_recipe, lancer_minuteur, valider_et_detaille_recette, navigation_pas_a_pas]
+        self.base_tools = [propose_recipe_options, get_ingredients_quantities, lancer_minuteur, valider_et_detaille_recette, navigation_pas_a_pas]
         
         # # Construire la liste d'outils initiale
         # tools_list = self._get_tools_for_current_state()
