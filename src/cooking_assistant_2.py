@@ -101,15 +101,10 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
             
             for idx, recette in enumerate(recipes_data['recettes'], start=1):
                 # Recipe header
-                recipe_text = f"-"*120 + "\n"
+                recipe_text = ""
                 recipe_text += f"{idx}. {recette.get('titre', 'Recette sans titre')}"
                 temps = recette.get('temps_prepa_minutes')
-                recipe_text += f"- {temps} minutes "+ "\n"
-                ingredients = recette.get('ingredients', [])
-                if ingredients:
-                    
-                    for ing in ingredients:
-                        recipe_text += f" - {ing.get('name')} "
+                recipe_text += f" - {temps} minutes "
                 print("saving the recipes")
                 self.state_machine.set_proposed_recipes(recipes_data['recettes'])
                    
@@ -119,22 +114,7 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
                 
                 self.ui.show_text(recipe_text)
 
-    def _store_ingredients_data(self, recipes_data: dict):
-        """Store ingredients data from a recipe."""
-        # Clear only the ingredients list, not the entire dictionary
-        self.ingredients_data['ingredients'] = []
-        if recipes_data.get('recettes'):
-            for idx, recette in enumerate(recipes_data['recettes'], start=1):
-                ingredients = recette.get('ingredients', [])
-
-                for ing in ingredients:
-                    self.ingredients_data['ingredients'].append({
-                        'name': ing.get('name'),
-                        'quantity': ing.get('quantity'),
-                        'unit': ing.get('unit'),
-                        'available': ing.get('available') 
-                    })
-        print(f"Ingredients data stored: {len(self.ingredients_data['ingredients'])}")
+  
      
     def _display_recipe_steps(self, recipe_data: dict):
         """Display recipe steps in a nicely formatted way.
@@ -167,40 +147,7 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
         
        
 
-    # def propose_recipes(self):
-    #     import time
-    #     start_time = time.time()
-    #     self.ui.show_text("\nAnalyse des ingrédients et recherche de recettes...\n")
-        
-    #     # Check if there's an additional recipe request
-    #     additional_request = self.state_machine.additional_recipe_request
-        
-    #     # Show loading indicator
-    #     self.ui.show_loading("Recherche de recettes...")
-        
-    #     try:
-    #         recipes_response = self.agent.propose_recipes(
-    #             self.state_machine.ingredients,
-    #             self.state_machine.servings,
-    #             additional_request
-    #         )
-    #     finally:
-    #         # Hide loading indicator
-    #         self.ui.hide_loading()
-    #         total_time = time.time() - start_time
-    #         print(f"[TIMING] propose_recipes (cooking_assistant) total: {total_time:.2f}s")
-        
-    #     # Clear the additional request after using it
-    #     self.state_machine.clear_additional_recipe_request()
-        
-    #     # Extract recipes list from response
-    #     recipes_list = recipes_response.get("recipes", [])
-        
-    #     # Use UI method to display recipes
-    #     self.ui.show_recipes(recipes_list)
-            
-    #     # Store recipes for selection
-    #     self.state_machine.set_proposed_recipes(recipes_list)
+
     
     def get_detailed_ingredients(self, list_of_recipes: list):
         data, text_response = self.agent.get_response("donne moi la liste des ingrédients detaillées pour toutes les recettes de la liste suivante: " + str(list_of_recipes))

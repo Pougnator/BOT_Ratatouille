@@ -86,7 +86,7 @@ Tu seras averti de chaque changement d'état.
         -> Indice : Il utilise des mots comme "la première", "la 2ème", "celle au curry", "plus de détails".
         -> Action : Tu DOIS appeler `more_details_on_recipe` (avec le numéro ou le nom).
         -> INTERDICTION : N'appelle PAS `propose_recipe_options` ici.
-        -> INTERDICTION : N'appelle PAS `get_detailed_ingredients`.
+        -> INTERDICTION : N'appelle PAS `get_detailed_quantities`.
 
     * **CAS C : L'utilisateur valide/choisit une recette pour cuisiner.**
         -> Action : Tu DOIS appeler `valider_et_detaille_recette`.
@@ -96,7 +96,7 @@ Tu seras averti de chaque changement d'état.
 
     * **CAS E : L'utilisateur demande explicitement de lancer la fonction get_ingredients_quantities pour une ou plusieurs recettes.**
         -> Action : Tu DOIS appeler `get_ingredients_quantities`.
-        -> INTERDICTION : Tu n'appelleras pas 'get_detailed_ingredients' si l'utilisateur ne te demande pas explicitement de lancer cette fonction, en citant le nom de la fonction.
+        -> INTERDICTION : Tu n'appelleras pas 'get_ingredients_quantities' si l'utilisateur ne te demande pas explicitement de lancer cette fonction, en citant le nom de la fonction.
 
 4.  **Navigation pas à pas :**
     * N'utilise `navigation_pas_a_pas` QUE dans les états "RECIPE_PREVIEW" ou "STEP_EXECUTION".
