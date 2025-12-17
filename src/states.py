@@ -15,12 +15,25 @@ class StateMachine:
     def __init__(self):
         self.current_state = CookingState.STARTING
         self.servings = 2
+        # List of detailed recipe dicts returned by the LLM, e.g.
+        # [
+        #   {
+        #       "name": str,
+        #       "difficulty": str,
+        #       "calories": float,
+        #       "ingredients": [
+        #           {"name": str, "quantity": float, "unit": str, "available": bool},
+        #           ...
+        #       ]
+        #   },
+        #   ...
+        # ]
         self.ingredients = []
         self.proposed_recipes = []
         self.selected_recipe = None
         self.current_step = 0
         self.recipe_steps = []
-        self.detailed_steps = []  # Pour stocker les étapes détaillées au format JSON pour le diagramme de Gantt
+        self.detailed_steps = []  # Pour stocker les étapes détaillées (ex: détails techniques d'une recette)
         self.additional_recipe_request = None
         
     def transition_to(self, new_state: CookingState):
@@ -33,7 +46,23 @@ class StateMachine:
         self.servings = servings
         
     def add_ingredients(self, ingredients: list):
-        self.ingredients.extend(ingredients)
+        """Store the full list of recipes with their detailed ingredients.
+
+        `ingredients` is expected to be a list of recipe dicts matching the structure
+        described in `self.ingredients`'s docstring above.
+        """
+        # Replace any existing data with the new full list
+        self.ingredients = list(ingredients)
+
+    def get_ingredients_for_recipe(self, recipe_name: str):
+        """Return the list of ingredient dicts for the given recipe name.
+
+        If the recipe is not found, returns an empty list.
+        """
+        for recipe in self.ingredients:
+            if recipe.get("name") == recipe_name:
+                return recipe.get("ingredients", [])
+        return []
         
     def set_proposed_recipes(self, recipes: list):
         self.proposed_recipes = recipes

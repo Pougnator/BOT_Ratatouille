@@ -4,3 +4,6 @@ Résoudre le probleme de navigation pas à pas qui se lance n'importe quand => D
 Comprendre pourquoi le chargement commence pas tout de suite on valide une recette
 Implementer la possiblité de changer la récette et recharger les ingrédients même si on est en cours de préparation
 mettre du notify_llm_with_loading partout ou c'est necessaire
+
+
+Tenter de virer la fonction qui affiche les details
