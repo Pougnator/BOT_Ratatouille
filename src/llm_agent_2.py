@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from google.ai.generativelanguage_v1beta.types import content
 from dotenv import load_dotenv
 from enum import Enum
+import time
 # Charger les variables d'environnement depuis .env
 load_dotenv()
 
@@ -84,9 +85,9 @@ Tu seras averti de chaque changement d'état.
 
     * **CAS B : L'utilisateur demande des précisions sur une des options proposées.**
         -> Indice : Il utilise des mots comme "la première", "la 2ème", "celle au curry", "plus de détails".
-        -> Action : Tu DOIS appeler `more_details_on_recipe` (avec le numéro ou le nom).
-        -> INTERDICTION : N'appelle PAS `propose_recipe_options` ici.
-        -> INTERDICTION : N'appelle PAS `get_detailed_quantities`.
+        -> Action : Tu dois donner plus de details sur la recette en question, sans appeler de fonction.
+        -> INTERDICTION : N'appelle PAS de fonctions ici.
+     
 
     * **CAS C : L'utilisateur valide/choisit une recette pour cuisiner.**
         -> Action : Tu DOIS appeler `valider_et_detaille_recette`.
@@ -267,16 +268,28 @@ class LLMAgent:
         # Outils de base toujours disponibles
         self.base_tools = [propose_recipe_options, get_ingredients_quantities, lancer_minuteur, valider_et_detaille_recette, navigation_pas_a_pas]
         
-        # # Construire la liste d'outils initiale
-        # tools_list = self._get_tools_for_current_state()
+        # Outils conditionnels par état (pour l'instant, tous les outils de base sont activés dans tous les états)
+        tools_list = self.base_tools
         
-        # # Stocker la liste d'outils actuelle pour comparaison
-        # self.current_tools = tools_list
+        self.conditional_tools = {
+            CookingState.STARTING: [propose_recipe_options, lancer_minuteur],
+            CookingState.INGREDIENT_COLLECTION: [propose_recipe_options, lancer_minuteur],
+            CookingState.RECIPE_PROPOSAL: [propose_recipe_options, lancer_minuteur, valider_et_detaille_recette],
+            CookingState.RECIPE_PREVIEW: [propose_recipe_options,get_ingredients_quantities, valider_et_detaille_recette,  lancer_minuteur],
+            CookingState.STEP_EXECUTION: [propose_recipe_options, lancer_minuteur,  navigation_pas_a_pas],
+            CookingState.COMPLETED: [propose_recipe_options, lancer_minuteur, navigation_pas_a_pas],
+        }
+        
+        # Construire la liste d'outils initiale
+        tools_list = self._get_tools_for_current_state()
+        
+        # Stocker la liste d'outils actuelle pour comparaison
+        self.current_tools = tools_list
         
         # On initialise le modèle avec les outils
         self.model = genai.GenerativeModel(
             'gemini-2.5-pro',
-            tools=self.base_tools,
+            tools=tools_list,
             system_instruction=instruction_chef
         )
         
@@ -295,13 +308,13 @@ class LLMAgent:
         if self.state_machine:
             # Lire l'état actuel (pas l'état à l'init)
             current_state = self.state_machine.current_state
-            # Ajouter les outils conditionnels pour l'état actuel
+            # Remplacer la liste d'outils par celle définie pour l'état actuel
             if current_state in self.conditional_tools:
-                tools.extend(self.conditional_tools[current_state])
+                tools = list(self.conditional_tools[current_state])
         
         return tools
     
-    def _update_tools_if_needed(self):
+    def _update_tools_if_needed(self, model_name: str):
         """Met à jour le chat avec les outils appropriés si l'état a changé."""
         if not self.state_machine:
             return
@@ -313,6 +326,7 @@ class LLMAgent:
         
         # Si les outils sont différents, recréer le modèle et le chat
         if current_tool_names != previous_tool_names:
+            current_time = time.time()
             # Sauvegarder l'historique du chat pour le restaurer
             chat_history = []
             if self.chat and hasattr(self.chat, 'history'):
@@ -320,7 +334,7 @@ class LLMAgent:
             
             # Recréer le modèle avec les nouveaux outils
             self.model = genai.GenerativeModel(
-                'gemini-2.5-pro',
+                model_name,
                 tools=current_tools,
                 system_instruction=instruction_chef
             )
@@ -333,23 +347,43 @@ class LLMAgent:
                 history=chat_history,
                 enable_automatic_function_calling=False
             )
-            
+            task_time = time.time() - current_time
+            print(f"Time taken to update tools: {task_time} seconds")
             print(f"[SYSTEME] 🔧 Outils mis à jour pour l'état {self.state_machine.current_state.value}: {[tool.__name__ for tool in current_tools]} (historique préservé: {len(chat_history)} messages)")
 
     def get_response(self, user_input: str):
         # Mettre à jour les outils si l'état a changé depuis le dernier appel
         # Cette vérification se fait à chaque interaction, donc les outils sont toujours à jour
-        # self._update_tools_if_needed()
+        self._update_tools_if_needed('gemini-2.5-pro')
         
         structured_data = None
         response_text = None
-        response = self.chat.send_message(user_input)
+
+        # On autorise un seul retry en cas de MALFORMED_FUNCTION_CALL
+        response = None
+        for attempt in range(2):
+            response = self.chat.send_message(user_input)
+            finish_reason = None
+            try:
+                finish_reason = response.candidates[0].finish_reason
+            except Exception:
+                finish_reason = None
+
+            if finish_reason == "MALFORMED_FUNCTION_CALL":
+                print("\n[SYSTEME] ⚠️ MALFORMED_FUNCTION_CALL détecté, nouveau retry unique...")
+                # Si c'est le premier essai, on retente une fois
+                if attempt == 0:
+                    continue
+            # Soit pas d'erreur, soit deuxième essai : on sort de la boucle
+            break
+
+        # Parse la réponse (quelle que soit l'issue du finish_reason au 2e essai)
         for part in response.candidates[0].content.parts:
              # Cas A : Le modèle veut appeler une fonction (C'est ce qu'on veut !)
             if part.function_call:
                 fn_name = part.function_call.name
                 fn_args = part.function_call.args
-
+               
                 #Si la fonction est la liste de proposition de recettes
                 if fn_name == 'propose_recipe_options':
                     print(f"\n[SYSTEME] 📋 PROPOSITION DE RECETTES demandée par le LLM")

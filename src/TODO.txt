@@ -1,9 +1,20 @@
 Simplifier le code
-Comprendre pourquoi il y'a un délai pour afficher les infos du timer => DONE
-Résoudre le probleme de navigation pas à pas qui se lance n'importe quand => DONE
+
 Comprendre pourquoi le chargement commence pas tout de suite on valide une recette
 Implementer la possiblité de changer la récette et recharger les ingrédients même si on est en cours de préparation
 mettre du notify_llm_with_loading partout ou c'est necessaire
 
 
 Tenter de virer la fonction qui affiche les details
+
+
+Si je décide de changer de recette ou ingrédient en cours de route
+
+Recette => soit on repasse dans l'état recipe proposal
+        => soit on reste sur la recette en cours et on change juste d'ingrédients
+              => mise à jour ingrédients
+                 => envoi du prompt get ingredients 
+                 => affichage
+              => mise à jour de la recette
+                 => fonction recipe steps en ghost
+                 => mise à jour des steps dans le state_machine
