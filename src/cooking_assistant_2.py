@@ -9,6 +9,7 @@ from timer import CookingTimer
 from hardware_handler import HardwareHandler
 from plotly_gantt import PlotlyGanttVisualizer
 from cooking_ui import CookingUI
+from google.ai.generativelanguage_v1beta.types import content
 
 
 class CookingAssistant:
@@ -162,9 +163,31 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
         self.ui.show_loading(loading_message)
         try:
             if function_name is None:
-                self.agent.notify_llm_without_response(notification_message)
+                # self.agent.notify_llm_without_response(notification_message)
+                user_message = content.Content(
+                    role='user',
+                    parts=[content.Part(text=notification_message)]
+                )
             else:
-                self.agent.notify_llm_function_completed(notification_message, function_name)
+                # 1. Créer le message "Utilisateur" (votre notification système)
+                user_message = content.Content(
+                    role='user',
+                    parts=[content.Part(function_response=content.FunctionResponse(
+                            name=function_name,
+                            response=notification_message)
+                    )]
+                )
+
+            model_ack = content.Content(
+                role='model',
+                parts=[content.Part(text="Bien reçu, contexte mis à jour.")
+                ]
+            )
+
+               
+            self.agent.chat.history.append(user_message)
+            self.agent.chat.history.append(model_ack)
+                # self.agent.notify_llm_function_completed(notification_message, function_name)
         finally:
             print(f"Time taken to notify the llm: {time.time() - current_time} seconds")
             self.ui.hide_loading()
@@ -324,7 +347,7 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
                     
                     # Stocker la liste complète des recettes proposées dans la state machine
                     self.state_machine.set_proposed_recipes(data.get("recettes", []))
-                    self.state_machine.transition_to(CookingState.INGREDIENT_COLLECTION)
+                    self.state_machine.transition_to(CookingState.RECIPE_PROPOSAL)
                    
                     self.agent.notify_llm_function_completed(
                         "Les recettes ont été affichées à l'utilisateur. Il est en train de réfléchir et va choisir une recette.",
@@ -350,10 +373,10 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
                     #     print("Unexpected ingredients_data format returned by LLM:", ingredients_data)
                     
                     # Transition vers RECIPE_PROPOSAL après avoir obtenu et traité les ingrédients
-                    self.state_machine.transition_to(CookingState.RECIPE_PROPOSAL)
-                    self.agent.notify_llm_without_response(
-                        f"[Systeme][INFO CONTEXTE - NE PAS REPONDRE] On passe à l'état {self.state_machine.current_state.value}"
-                    )
+                    # self.state_machine.transition_to(CookingState.RECIPE_PROPOSAL)
+                    # self.agent.notify_llm_without_response(
+                    #     f"[Systeme][INFO CONTEXTE - NE PAS REPONDRE] On passe à l'état {self.state_machine.current_state.value}"
+                    # )
                 if 'timer_started' in data and data.get('timer_started'):
                     # Lancer le minuteur avec les données reçues
                     duree_secondes = data.get('duree_secondes')
@@ -411,6 +434,16 @@ Je vous aiderai à découvrir de délicieuses recettes basées sur vos ingrédie
                     # Display the recipe steps nicely in the UI
                     self._display_recipe_steps(decoded_recipe)
                     recipe_name = self.state_machine.selected_recipe
+                    # Demander au LLM une phrase courte de transition, sans réutiliser `data`
+                    _, preview_text = self.agent.get_response(
+                        "Les grandes étapes de la recette ont été affichés. "
+                        "Demandes à l'utilisateur s'il veut se lancer dans la préparation. "
+                        "Prépare-toi à lancer la fonction navigation_pas_a_pas avec l'action DEMARRER "
+                        "à la prochaine entrée utilisateur. Réponds juste par une phrase courte type : "
+                        "\"On se lance ?\""
+                    )
+                    if preview_text:
+                        self.ui.show_text(f"{preview_text}\n")
                      # Transition vers RECIPE_PREVIEW (le log sera fait par transition_to)
                     self.state_machine.transition_to(CookingState.RECIPE_PREVIEW)
                     

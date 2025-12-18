@@ -91,6 +91,7 @@ Tu seras averti de chaque changement d'état.
 
     * **CAS C : L'utilisateur valide/choisit une recette pour cuisiner.**
         -> Action : Tu DOIS appeler `valider_et_detaille_recette`.
+    
 
     * **CAS D : L'utilisateur demande un minuteur.**
         -> Action : Tu DOIS appeler `lancer_minuteur`.
@@ -101,9 +102,9 @@ Tu seras averti de chaque changement d'état.
 
 4.  **Navigation pas à pas :**
     * N'utilise `navigation_pas_a_pas` QUE dans les états "RECIPE_PREVIEW" ou "STEP_EXECUTION".
-    * Si l'utilisateur dit "commencer", "go", "c'est parti" -> Action : `navigation_pas_a_pas` (DEMARRER).
-    * Si l'utilisateur dit "suivant" -> Action : `navigation_pas_a_pas` (SUIVANT).
-    * Si l'utilisateur dit "précédent" -> Action : `navigation_pas_a_pas` (PRECEDENT).
+    * Si l'utilisateur dit "commencer", "go", "c'est parti", etc -> Action : `navigation_pas_a_pas` (DEMARRER).
+    * Si l'utilisateur dit "suivant", "next", "continue", "ok", "c'est fait", etc -> Action : `navigation_pas_a_pas` (SUIVANT).
+    * Si l'utilisateur dit "précédent", "back", "reviens en arrière", etc -> Action : `navigation_pas_a_pas` (PRECEDENT).
 
 ### Consignes de génération (Tone & Style) ###
 1.  Par défait généres 4 suggestions variées lors de l'appel à `propose_recipe_options`. Mais ce nombre peut varier en fonction de la demande de l'utilisateur.
@@ -238,7 +239,7 @@ def lancer_minuteur(duree_secondes: int, label: str):
 def valider_et_detaille_recette(id_recette: str, recette_detaillee: RecetteSteps):
     """
     Valide le choix de l'utilisateur et génère les étapes détaillées, ainsi qu'une phrase d'introduction de la recette et un conseil gourmand final.
-    Change l'état vers 'cooking_guidance'. Ne doit être appelée que dans l'état RECIPE_PROPOSAL.
+    Change l'état vers 'cooking_guidance'.
     
     """
     # Cette fonction est uniquement utilisée comme signature pour Google Generative AI
@@ -275,9 +276,18 @@ class LLMAgent:
             CookingState.STARTING: [propose_recipe_options, lancer_minuteur],
             CookingState.INGREDIENT_COLLECTION: [propose_recipe_options, lancer_minuteur],
             CookingState.RECIPE_PROPOSAL: [propose_recipe_options, lancer_minuteur, valider_et_detaille_recette],
-            CookingState.RECIPE_PREVIEW: [propose_recipe_options,get_ingredients_quantities, valider_et_detaille_recette,  lancer_minuteur],
+            CookingState.RECIPE_PREVIEW: [propose_recipe_options,get_ingredients_quantities, navigation_pas_a_pas,  lancer_minuteur],
             CookingState.STEP_EXECUTION: [propose_recipe_options, lancer_minuteur,  navigation_pas_a_pas],
             CookingState.COMPLETED: [propose_recipe_options, lancer_minuteur, navigation_pas_a_pas],
+        }
+
+        self.conditional_model = {
+            CookingState.STARTING: 'gemini-3-pro-preview',
+            CookingState.INGREDIENT_COLLECTION: 'gemini-3-pro-preview',
+            CookingState.RECIPE_PROPOSAL: 'gemini-3-pro-preview',
+            CookingState.RECIPE_PREVIEW: 'gemini-3-pro-preview',
+            CookingState.STEP_EXECUTION: 'gemini-flash-latest',
+            CookingState.COMPLETED: 'gemini-flash-latest',
         }
         
         # Construire la liste d'outils initiale
@@ -319,7 +329,10 @@ class LLMAgent:
         if not self.state_machine:
             return
         
+        
         current_tools = self._get_tools_for_current_state()
+        model_name = self.conditional_model[self.state_machine.current_state]
+
         # Vérifier si les outils ont changé en comparant les noms des fonctions
         current_tool_names = {tool.__name__ for tool in current_tools}
         previous_tool_names = {tool.__name__ for tool in self.current_tools}
@@ -362,7 +375,18 @@ class LLMAgent:
         # On autorise un seul retry en cas de MALFORMED_FUNCTION_CALL
         response = None
         for attempt in range(2):
-            response = self.chat.send_message(user_input)
+            try:
+                response = self.chat.send_message(user_input)
+            except Exception as e:
+                # Certains cas de MALFORMED_FUNCTION_CALL lèvent une exception côté SDK
+                # plutôt que de renvoyer un finish_reason dans la réponse.
+                msg = str(e)
+                if "MALFORMED_FUNCTION_CALL" in msg and attempt == 0:
+                    print("\n[SYSTEME] ⚠️ MALFORMED_FUNCTION_CALL (exception SDK) détecté, retry unique...")
+                    continue  # on retente une fois
+                # Autre type d'erreur, ou deuxième échec : on propage
+                raise
+
             finish_reason = None
             try:
                 finish_reason = response.candidates[0].finish_reason
@@ -370,8 +394,7 @@ class LLMAgent:
                 finish_reason = None
 
             if finish_reason == "MALFORMED_FUNCTION_CALL":
-                print("\n[SYSTEME] ⚠️ MALFORMED_FUNCTION_CALL détecté, nouveau retry unique...")
-                # Si c'est le premier essai, on retente une fois
+                print("\n[SYSTEME] ⚠️ MALFORMED_FUNCTION_CALL détecté dans finish_reason, retry unique...")
                 if attempt == 0:
                     continue
             # Soit pas d'erreur, soit deuxième essai : on sort de la boucle
@@ -527,7 +550,23 @@ class LLMAgent:
         Args:
             notification_message: Message à envoyer au LLM
         """
-        self.chat.send_message(notification_message)
+        # self.chat.send_message(notification_message)
+     
+        user_message = content.Content(
+            role='user',
+            parts=[content.Part(text=notification_message)]
+                )
+             
+
+        model_ack = content.Content(
+                role='model',
+                parts=[content.Part(text="Bien reçu, contexte mis à jour.")
+                ]
+            )
+
+               
+        self.chat.history.append(user_message)
+        self.chat.history.append(model_ack)
 
 
 
