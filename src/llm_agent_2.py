@@ -105,6 +105,7 @@ Tu seras averti de chaque changement d'état.
     * Si l'utilisateur dit "commencer", "go", "c'est parti", etc -> Action : `navigation_pas_a_pas` (DEMARRER).
     * Si l'utilisateur dit "suivant", "next", "continue", "ok", "c'est fait", etc -> Action : `navigation_pas_a_pas` (SUIVANT).
     * Si l'utilisateur dit "précédent", "back", "reviens en arrière", etc -> Action : `navigation_pas_a_pas` (PRECEDENT).
+    * Ne génére pas de réponse textuelle à la fonction navigation_pas_a_pas.
 
 ### Consignes de génération (Tone & Style) ###
 1.  Par défait généres 4 suggestions variées lors de l'appel à `propose_recipe_options`. Mais ce nombre peut varier en fonction de la demande de l'utilisateur.

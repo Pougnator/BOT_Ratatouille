@@ -1,8 +1,7 @@
 Simplifier le code
-
-Comprendre pourquoi le chargement commence pas tout de suite on valide une recette
+Faire une fonction "modifier une recette" dans la phace recipe proposal ou demarrer
 Implementer la possiblité de changer la récette et recharger les ingrédients même si on est en cours de préparation
-mettre du notify_llm_with_loading partout ou c'est necessaire
+
 
 
 Tenter de virer la fonction qui affiche les details
@@ -18,3 +17,5 @@ Recette => soit on repasse dans l'état recipe proposal
               => mise à jour de la recette
                  => fonction recipe steps en ghost
                  => mise à jour des steps dans le state_machine
+
+
